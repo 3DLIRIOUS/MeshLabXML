@@ -18,8 +18,8 @@ import os, sys, inspect
 from math import *
 
 #Add parent directory to python path for importing local modules; omit this if module is already in path. This assumes that this script is in the "examples" directory and meshlabxml.py is in the parent.
-scriptpath = os.path.dirname(os.path.realpath(inspect.getsourcefile(lambda:0)))
-sys.path.append(os.path.join(scriptpath,os.pardir))
+#scriptpath = os.path.dirname(os.path.realpath(inspect.getsourcefile(lambda:0)))
+#sys.path.append(os.path.join(scriptpath,os.pardir))
 
 #Local modules
 import meshlabxml as mlx

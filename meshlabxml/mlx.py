@@ -10,7 +10,7 @@ import subprocess
 #import re
 import xml.etree.ElementTree as ET
 from glob import glob
-from math import *
+import math
 
 ML_VERSION = '1.3.4Beta'
 
@@ -151,6 +151,8 @@ def run(runlogname=None, cmd=None, log=None, p=None, w=None,
     while True:
         return_code = subprocess.call( cmd, shell=True, stdout=RUNLOG,
                                    stderr=RUNLOG, universal_newlines=True)
+        RUNLOG.close()
+
         if return_code == 0:
             break
         else:
@@ -184,6 +186,7 @@ def run(runlogname=None, cmd=None, log=None, p=None, w=None,
             elif choice == 'r':
                 print('Retrying meshlabserver cmd ...')
     if runlogname is not None:
+        RUNLOG = open(runlogname, 'a')
         RUNLOG.write('***END OF MESHLAB STDOUT & STDERR***\n')
         RUNLOG.write('meshlabserver return code = %s\n\n' % return_code)
         RUNLOG.close()
@@ -1189,7 +1192,7 @@ def rotate2 (s='MLTEMP_default.mlx', axis='z', angle=0,
 def rotate(s='MLTEMP_default.mlx', axis='z', angle=0, LCur=None, LLast=None):
     """An alternative rotate implementation that uses a geometric function.
     This is more accurate than the built-in version."""
-    angle = radians(angle)
+    angle = math.radians(angle)
     if axis.lower()=='x':
         deform_func(s, x='x',
                        y='y*cos(%s)-z*sin(%s)' % (angle, angle),
@@ -1645,7 +1648,7 @@ def deform2cylinder(s='MLTEMP_default.mlx', r=1, pitch=0, LCur=None, LLast=None)
                      z='z-%s*x/(2*%s*(%s+y))' % (pitch, pi, r))"""
     deform_func(s=s, x='(%s+y)*sin(x/%s)' % (r, r),
                      y='(%s+y)*cos(x/%s)' % (r, r),
-                     z='z-%s*x/(2*%s*%s)' % (pitch, pi, r))
+                     z='z-%s*x/(2*%s*%s)' % (pitch, math.pi, r))
     return LCur, LLast
 
 def deform_bend(s='MLTEMP_default.mlx', r=1,  pitch=0, angle=0, straightEnds=False, LCur=None, LLast=None):
@@ -1653,7 +1656,7 @@ def deform_bend(s='MLTEMP_default.mlx', r=1,  pitch=0, angle=0, straightEnds=Fal
     
     straightEnds: Only apply twist (pitch) over the area that is bent
     """
-    angle = radians(angle/2)
+    angle = math.radians(angle/2)
     segment = r*angle
     """deform_func(s=s, x='if(x<%s and x>-%s, (%s+y)*sin(x/%s), (%s+y)*sin(%s/%s)+(x-%s)*cos(%s/%s))'
                         % (segment, segment,  r, r,  r, segment, r, segment, segment, r),
@@ -1662,9 +1665,9 @@ def deform_bend(s='MLTEMP_default.mlx', r=1,  pitch=0, angle=0, straightEnds=Fal
     xfunc = 'if(x<%s, if(x>-%s, (%s+y)*sin(x/%s), (%s+y)*sin(-%s)+(x+%s)*cos(-%s)), (%s+y)*sin(%s)+(x-%s)*cos(%s))' % (segment, segment,  r, r,  r, angle, segment, angle,   r, angle, segment, angle)
     yfunc = 'if(x<%s, if(x>-%s, (%s+y)*cos(x/%s), (%s+y)*cos(-%s)-(x+%s)*sin(-%s)), (%s+y)*cos(%s)-(x-%s)*sin(%s))' % (segment, segment,  r, r,  r, angle, segment, angle,   r, angle, segment, angle)
     if straightEnds:
-        zfunc = z='if(x<%s, if(x>-%s, z-%s*x/(2*%s*%s), z+%s*%s/(2*%s)), z-%s*%s/(2*%s))' % (segment, segment, pitch, pi, r, pitch, angle, pi, pitch, angle, pi)
+        zfunc = z='if(x<%s, if(x>-%s, z-%s*x/(2*%s*%s), z+%s*%s/(2*%s)), z-%s*%s/(2*%s))' % (segment, segment, pitch, math.pi, r, pitch, angle, math.pi, pitch, angle, math.pi)
     else:
-        zfunc = 'z-%s*x/(2*%s*%s)' % (pitch, pi, r)
+        zfunc = 'z-%s*x/(2*%s*%s)' % (pitch, math.pi, r)
     deform_func(s=s, x=xfunc, y=yfunc, z=zfunc)
     return LCur, LLast
 
@@ -2414,14 +2417,14 @@ def tube_hires(s='MLTEMP_default.mlx', h=1.0, r=None, r1=None, r2=None, d=None,
         LCur, LLast = duplicate_L(s, LCur=LCur, LLast=LLast)
     translate(s, [0,0,-h])
 
-    LCur, LLast = plane(s, [2*pi*r1, h], segmentsX=segmentsC, segmentsY=segmentsH, LCur=LCur, LLast=LLast)
+    LCur, LLast = plane(s, [2*math.pi*r1, h], segmentsX=segmentsC, segmentsY=segmentsH, LCur=LCur, LLast=LLast)
     rotate(s, 'x', 90)
-    translate(s, [pi*r1/2,0,-h])
+    translate(s, [math.pi*r1/2,0,-h])
     deform2cylinder(s, r1)
     if r2 != 0:
-        LCur, LLast = plane(s, [2*pi*r2, h], segmentsX=segmentsC, segmentsY=segmentsH, LCur=LCur, LLast=LLast)
+        LCur, LLast = plane(s, [2*math.pi*r2, h], segmentsX=segmentsC, segmentsY=segmentsH, LCur=LCur, LLast=LLast)
         rotate(s, 'x', 90)
-        translate(s, [pi*r2/2,0,-h])
+        translate(s, [math.pi*r2/2,0,-h])
         deform2cylinder(s, r2)
     LCur, LLast = join_L(s, LCur=LCur, LLast=LLast)
     merge_V(s, threshold=0.0001)
@@ -2772,7 +2775,7 @@ def color_V_voronoi(s='MLTEMP_default.mlx', target_L=0, source_L=1,
     sf.close ()
     return LCur, LLast
 
-def color_V_cyclic_rainbow(s='MLTEMP_default.mlx', direction='sphere', center=[0,0,0], a=255/2, c=255/2, f=0.8, p=[0,2*pi/3,4*pi/3,0], alpha=False, LCur=None, LLast=None):
+def color_V_cyclic_rainbow(s='MLTEMP_default.mlx', direction='sphere', center=[0,0,0], a=255/2, c=255/2, f=0.8, p=[0,2*math.pi/3,4*math.pi/3,0], alpha=False, LCur=None, LLast=None):
     """Color your mesh vertices in a repeating rainbow pattern
     direction = sphere, x, y, z, function
     center = center point of color function. For a sphere this is the center of the sphere.
@@ -2843,7 +2846,7 @@ def file_measure_AABB(fbasename=None, runlogname=None):
                     (AABB['max'][2] + AABB['min'][2])/2]
         AABB['size'] = [AABB['max'][0] - AABB['min'][0], AABB['max'][1] - AABB['min'][1],
                     AABB['max'][2] - AABB['min'][2]]
-        AABB['diagonal'] = sqrt(AABB['size'][0]**2 + AABB['size'][1]**2 + AABB['size'][2]**2)
+        AABB['diagonal'] = math.sqrt(AABB['size'][0]**2 + AABB['size'][1]**2 + AABB['size'][2]**2)
     except UnboundLocalError:
         print('Error: AABB input file does not contain valid data. Exiting ...')
         sys.exit(1)
@@ -2896,7 +2899,7 @@ def file_polylinesort(fbasename=None, runlogname=None):
                     (AABB['max'][2] + AABB['min'][2])/2]
         AABB['size'] = [AABB['max'][0] - AABB['min'][0], AABB['max'][1] - AABB['min'][1],
                     AABB['max'][2] - AABB['min'][2]]
-        AABB['diagonal'] = sqrt(AABB['size'][0]**2 + AABB['size'][1]**2 + AABB['size'][2]**2)
+        AABB['diagonal'] = math.sqrt(AABB['size'][0]**2 + AABB['size'][1]**2 + AABB['size'][2]**2)
     except UnboundLocalError:
         print('Error: AABB input file does not contain valid data. Exiting ...')
         sys.exit(1)
