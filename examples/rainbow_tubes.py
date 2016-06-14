@@ -1,63 +1,87 @@
 #!/usr/bin/python3
-"""example MeshLabXML script to create a heroic shield
+"""example MeshLabXML script to demonstrate functions
 
-MeshLab is typically used to process existing meshes; this script was created to demonstrate some of MeshLab's mesh creation features as well. It demonstrates combining python functionality (math and flow control) and MeshLab to create a parametric 3D model that's truly heroic!
-
-Note that the final model is composed of separate surfaces. It is not manifold and is e.g. not suitable for 3D printing; it's just a silly example.
+Sample script to demonstrate how MeshLab's powerful functions can be
+used. Both mlx.transform.wrap2cylinder and mlx.vert_color.cyclic_rainbow
+are based on MeshLab functions powered by muparser.
 
 License:
     Written in 2016 by Tim Ayres 3DLirious@gmail.com
 
-    To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
+    To the extent possible under law, the author(s) have dedicated all
+    copyright and related and neighboring rights to this software to the
+    public domain worldwide. This software is distributed without any
+    warranty.
 
-    You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+    You should have received a copy of the CC0 Public Domain Dedication
+    along with this software. If not, see
+    <http://creativecommons.org/publicdomain/zero/1.0/>.
+
 """
 
-#Builtin modules
-import os, sys, inspect
-from math import *
+import os
 
-#Add parent directory to python path for importing local modules; omit this if module is already in path. This assumes that this script is in the "examples" directory and meshlabxml.py is in the parent.
-#scriptpath = os.path.dirname(os.path.realpath(inspect.getsourcefile(lambda:0)))
-#sys.path.append(os.path.join(scriptpath,os.pardir))
-
-#Local modules
 import meshlabxml as mlx
 
-# Add meshlabserver directory to OS PATH; omit this if it is already in your PATH
-meshlabserver_path = 'C:\\Program Files\\VCG\\MeshLab'
-os.environ['PATH'] += os.pathsep + meshlabserver_path
+# Add meshlabserver directory to OS PATH; omit this if it is already in
+# your PATH
+MESHLABSERVER_PATH = 'C:\\Program Files\\VCG\\MeshLab'
+os.environ['PATH'] += os.pathsep + MESHLABSERVER_PATH
 
-s1 = 'MLTEMP_tube1.mlx'
-o1 = 'MLTEMP_tube1.ply'
-s2 = 'MLTEMP_tube2.mlx'
-o2 = 'MLTEMP_tube2.ply'
-i3 = [o1, o2]
-s3 = 'MLTEMP_join.mlx'
-o3 = 'ranbow_tubes.ply'
 
-mlx.begin(s1)
-mlx.tube_hires(s1, h=165, r1=1, r2=0.7, segmentsC=32, segmentsR=1, segmentsH=165, center=True)
-mlx.rotate(s1, 'y', -90)
-mlx.deform2cylinder(s1, r=3, pitch=8)
-mlx.end(s1)
-mlx.run(s=s1, o=o1)
+def main():
+    """Run main script"""
 
-mlx.begin(s2)
-mlx.tube_hires(s2, h=300, r1=1.5, r2=1, segmentsC=32, segmentsR=1, segmentsH=300, center=True)
-mlx.rotate(s2, 'y', -90)
-mlx.deform2cylinder(s2, r=6, pitch=-8)
-mlx.end(s2)
-mlx.run(s=s2, o=o2)
+    script1 = 'TEMP3D_tube1.mlx'
+    mesh1 = 'TEMP3D_tube1.ply'
+    script2 = 'TEMP3D_tube2.mlx'
+    mesh2 = 'TEMP3D_tube2.ply'
+    input3 = [mesh1, mesh2]
+    script3 = 'TEMP3D_join.mlx'
+    final_output = 'ranbow_tubes.ply'
 
-mlx.begin(s3, i=i3)
-mlx.join_L(s3)
-mlx.color_V_cyclic_rainbow(s3, f=0.8)
-mlx.rotate(s3, 'y', -90)
-mlx.deform2cylinder(s3, r=20, pitch=0)
-mlx.end(s3)
-mlx.run(s=s3, o=o3, i=i3)
+    mlx.begin(script1)
+    mlx.create.tube_hires(
+        script1,
+        height=165,
+        radius1=1,
+        radius2=0.7,
+        cir_segments=32,
+        rad_segments=1,
+        height_segments=165,
+        center=True)
+    mlx.transform.rotate(script1, 'y', -90)
+    mlx.transform.wrap2cylinder(script1, radius=3, pitch=8)
+    mlx.end(script1)
+    mlx.run(script=script1, file_out=mesh1)
 
-wait = input('\nPress ENTER to delete MLTEMP* files, or type "n" to keep them: ')
-if wait == '':
-    mlx.delete_all('MLTEMP*')
+    mlx.begin(script2)
+    mlx.create.tube_hires(
+        script2,
+        height=300,
+        radius1=1.5,
+        radius2=1,
+        cir_segments=32,
+        rad_segments=1,
+        height_segments=300,
+        center=True)
+    mlx.transform.rotate(script2, 'y', -90)
+    mlx.transform.wrap2cylinder(script2, radius=6, pitch=-8)
+    mlx.end(script2)
+    mlx.run(script=script2, file_out=mesh2)
+
+    mlx.begin(script3, file_in=input3)
+    mlx.layers.join(script3)
+    mlx.vert_color.cyclic_rainbow(script3, freq=0.8)
+    mlx.transform.rotate(script3, 'y', -90)
+    mlx.transform.wrap2cylinder(script3, radius=20, pitch=0)
+    mlx.end(script3)
+    mlx.run(script=script3, file_out=final_output, file_in=input3)
+
+    wait = input(
+        '\nPress ENTER to delete TEMP3D* files, or type "n" to keep them: ')
+    if wait == '':
+        mlx.util.delete_all('TEMP3D*')
+
+if __name__ == '__main__':
+    main()

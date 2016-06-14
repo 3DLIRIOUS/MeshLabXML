@@ -1,0 +1,681 @@
+#! python3
+""" MeshLabXML creation functions """
+
+import math
+
+from . import transform
+from . import util
+from . import vert_color
+from . import clean
+from . import layers
+from . import normals
+
+
+def cube(script='TEMP3D_default.mlx', size=1.0,
+         center=False, color=None,
+         current_layer=None, last_layer=None):
+    """Create a cube primitive"""
+    if current_layer is not None:
+        current_layer += 1
+        last_layer += 1
+    # Convert size to list if it isn't already
+    if not isinstance(size, list):
+        size = list(size)
+    # If a single value was supplied use it for all 3 axes
+    if len(size) == 1:
+        size = [size[0], size[0], size[0]]
+    #size = util.check_list(size, 3)
+    script_file = open(script, 'a')
+    script_file.write('  <filter name="Box">\n' +
+
+                      '    <Param name="size" ' +
+                      'value="1.0" ' +
+                      'description="Scale factor" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="Scales the new mesh"/>\n' +
+
+                      '  </filter>\n')
+    script_file.close()
+    transform.scale(script, value=size)
+    # Box is centered on origin at creation
+    if not center:
+        transform.translate(
+            script,
+            value=[
+                size[0] / 2,
+                size[1] / 2,
+                size[2] / 2])
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
+
+
+# Usage: height=(1) (radius=(1)|(radius1=(1) radius2=(1)))|(diameter=(2)|(diameter1=(2) diameter2=(2))) center=(false)
+# Note: need to know m_up in order to orient cylinder correctly!
+# OpenSCAD cylinder:
+#    height This is the height of the cylinder. Default value is 1.
+#    radius The radius of both top and bottom ends of the cylinder. Use this parameter if you want plain cylinder. Default value is 1.
+#    radius1 This is the radius of the cone on bottom end. Default value is 1.
+#    radius2 This is the radius of the cone on top end. Default value is 1.
+#    diameter The diameter of both top and bottom ends of the cylinder. Use this parameter if you want plain cylinder. Default value is 1.
+#    diameter1 This is the diameter of the cone on bottom end. Default value is 1.
+#    diameter2 This is the diameter of the cone on top end. Default value is 1.
+# center If true will center the height of the cone/cylinder around the
+# origin. Default is false, placing the base of the cylinder or radius1 radius
+# of cone at the origin.
+def cylinder(script='TEMP3D_default.mlx', up='z', height=1.0,
+             radius=None, radius1=None, radius2=None,
+             diameter=None, diameter1=None, diameter2=None,
+             center=False, cir_segments=32, color=None,
+             current_layer=None, last_layer=None):
+    """Create a cylinder or cone primitive. Usage is based on OpenSCAD.
+    # height = height of the cylinder
+    # radius1 = radius of the cone on bottom end
+    # radius2 = radius of the cone on top end
+    # center = If true will center the height of the cone/cylinder around
+    # the origin. Default is false, placing the base of the cylinder or radius1
+    # radius of cone at the origin.
+    # color = specify a color name to apply vertex colors to the newly
+    # created mesh
+    """
+    if current_layer is not None:
+        current_layer += 1
+        last_layer += 1
+    if radius is not None and diameter is None:
+        if radius1 is None and diameter1 is None:
+            radius1 = radius
+        if radius2 is None and diameter2 is None:
+            radius2 = radius
+    if diameter is not None:
+        if radius1 is None and diameter1 is None:
+            radius1 = diameter / 2
+        if radius2 is None and diameter2 is None:
+            radius2 = diameter / 2
+    if diameter1 is not None:
+        radius1 = diameter1 / 2
+    if diameter2 is not None:
+        radius2 = diameter2 / 2
+    if radius1 is None:
+        radius1 = 1.0
+    if radius2 is None:
+        radius2 = radius1
+
+    # Cylinder is created centered with Y up
+    script_file = open(script, 'a')
+    script_file.write('  <filter name="Cone">\n' +
+
+                      '    <Param name="h" ' +
+                      'value="%s" ' % height +
+                      'description="Height" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="Height of the Cone"/>\n' +
+
+                      '    <Param name="r0" ' +
+                      'value="%s" ' % radius1 +
+                      'description="Radius 1" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="Radius of the bottom circumference"/>\n' +
+
+                      '    <Param name="r1" ' +
+                      'value="%s" ' % radius2 +
+                      'description="Radius 2" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="Radius of the top circumference"/>\n' +
+
+                      '    <Param name="subdiv" ' +
+                      'value="%d" ' % cir_segments +
+                      'description="Side" ' +
+                      'type="RichInt" ' +
+                      'tooltip="Number of sides of the polygonal approximation of' +
+                      ' the cone"/>\n' +
+
+                      '  </filter>\n')
+    script_file.close()
+    if not center:
+        transform.translate(script, [0, height / 2, 0])
+    if up.lower() == 'z':
+        transform.rotate(script, axis='x', angle=90)  # rotate to Z up
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
+
+
+def icosphere(script='TEMP3D_default.mlx', radius=1.0, diameter=None,
+              subdivisions=3, color=None,
+              current_layer=None, last_layer=None):
+    """create an icosphere mesh
+
+    # subdivisions = Subdivision level; Number of the recursive subdivision of the
+    # surface. Default is 3 (a sphere approximation composed by 1280 faces).
+    # Admitted values are in the range 0 (an icosahedron) to 8 (a 1.3 MegaTris
+    # approximation of a sphere). Formula for number of faces: F=20*4^subdiv
+    # color = specify a color name to apply vertex colors to the newly
+    # created mesh"""
+    if current_layer is not None:
+        current_layer += 1
+        last_layer += 1
+    if diameter is not None:
+        radius = diameter / 2
+
+    script_file = open(script, 'a')
+    script_file.write('  <filter name="Sphere">\n' +
+
+                      '    <Param name="radius" ' +
+                      'value="%s" ' % radius +
+                      'description="Radius" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="Radius of the sphere"/>\n' +
+
+                      '    <Param name="subdiv" ' +
+                      'value="%d" ' % subdivisions +
+                      'description="Subdiv. Level" ' +
+                      'type="RichInt" ' +
+                      'tooltip="Number of the recursive subdivision of the surface.' +
+                      ' Default is 3 (a sphere approximation composed by 1280' +
+                      ' faces). Admitted values are in the range 0 (an icosahedron)' +
+                      ' to 8 (a 1.3 MegaTris approximation of a sphere)."/>\n' +
+
+                      '  </filter>\n')
+    script_file.close()
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
+
+
+def sphere_cap(script='TEMP3D_default.mlx', angle=1.0,
+               subdivisions=3, color=None,
+               current_layer=None, last_layer=None):
+    """# angle = Angle of the cone subtending the cap. It must be <180
+    # subdivisions = Subdivision level; Number of the recursive subdivision of the
+    # surface. Default is 3 (a sphere approximation composed by 1280 faces).
+    # Admitted values are in the range 0 (an icosahedron) to 8 (a 1.3 MegaTris
+    # approximation of a sphere). Formula for number of faces: F=20*4^subdivisions
+    # color = specify a color name to apply vertex colors to the newly
+    # created mesh"""
+    if current_layer is not None:
+        current_layer += 1
+        last_layer += 1
+    script_file = open(script, 'a')
+    script_file.write('  <filter name="Sphere Cap">\n' +
+
+                      '    <Param name="angle" ' +
+                      'value="%s" ' % angle +
+                      'description="Angle" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="Angle of the cone subtending the cap. It must be' +
+                      ' less than 180"/>\n' +
+
+                      '    <Param name="subdiv" ' +
+                      'value="%d" ' % subdivisions +
+                      'description="Subdiv. Level" ' +
+                      'type="RichInt" ' +
+                      'tooltip="Number of the recursive subdivision of the surface.' +
+                      ' Default is 3 (a sphere approximation composed by 1280' +
+                      ' faces). Admitted values are in the range 0 (an icosahedron)' +
+                      ' to 8 (a 1.3 MegaTris approximation of a sphere)."/>\n' +
+
+                      '  </filter>\n')
+    script_file.close()
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
+
+
+def torus(script='TEMP3D_default.mlx',
+          major_radius=3.0, minor_radius=1.0,
+          inner_diameter=None, outer_diameter=None,
+          major_segments=48, minor_segments=12,
+          color=None,
+          current_layer=None, last_layer=None):
+    """Create a torus mesh
+
+    Args:
+        major_radius (float, (optional)): radius from the origin to the
+            center of the cross sections
+        minor_radius (float, (optional)): radius of the torus’ cross
+            section
+        inner_diameter (float, (optional)): inner diameter of torus. If
+            both inner_diameter and outer_diameter are provided then
+            these will override major_radius and minor_radius.,
+        outer_diameter (float, (optional)): outer diameter of torus. If
+            both inner_diameter and outer_diameter are provided then
+            these will override major_radius and minor_radius.
+        major_segments (int (optional)): number of segments for the main
+            ring of the torus
+        minor_segments (int (optional)): number of segments for the minor
+            ring of the torus
+        color (str (optional)): color name to apply vertex colors to the
+            newly created mesh
+        current_layer (int (optional)): the current layer in the stack
+        last_layer (int (optional)): the highest numbered layer in the stack
+
+    Returns:
+        current_layer, last_layer
+
+    """
+    if current_layer is not None:
+        current_layer += 1
+        last_layer += 1
+    if inner_diameter is not None and outer_diameter is not None:
+        major_radius = (inner_diameter + outer_diameter) / 4
+        minor_radius = major_radius - inner_diameter / 2
+        # Ref: inner_diameter = 2 * (major_radius - minor_radius)
+        # Ref: outer_diameter = 2 * (major_radius + minor_radius)
+
+    script_file = open(script, 'a')
+    script_file.write('  <filter name="Torus">\n' +
+
+                      '    <Param name="hRadius" ' +
+                      'value="%s" ' % major_radius +
+                      'description="Horizontal Radius" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="Radius of the whole horizontal ring of the torus"/>\n' +
+
+                      '    <Param name="vRadius" ' +
+                      'value="%s" ' % minor_radius +
+                      'description="Vertical Radius" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="Radius of the vertical section of the ring"/>\n' +
+
+                      '    <Param name="hSubdiv" ' +
+                      'value="%d" ' % major_segments +
+                      'description="Horizontal Subdivision" ' +
+                      'type="RichInt" ' +
+                      'tooltip="Subdivision step of the ring"/>\n' +
+
+                      '    <Param name="vSubdiv" ' +
+                      'value="%d" ' % minor_segments +
+                      'description="Vertical Subdivision" ' +
+                      'type="RichInt" ' +
+                      'tooltip="Number of sides of the polygonal approximation of' +
+                      ' the torus section"/>\n' +
+
+                      '  </filter>\n')
+    script_file.close()
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
+
+
+def plane(script='TEMP3D_default.mlx', size=1.0,
+          x_segments=1, y_segments=1,
+          center=False, color=None,
+          current_layer=None, last_layer=None):
+    """2D square/plane/grid created on XY plane
+    num_V_X=2 # Number of vertices in the X direction. Must be at least 2
+    (start and end vertices); setting this to a higher value will create an
+    evenly spaced grid.
+    num_V_Y=2 # Number of vertices in the Y direction. Must be at least 2
+    (start and end vertices); setting this to a higher value will create an
+    evenly spaced grid.
+    center="false" # If true square will be centered on origin;
+    otherwise it is place in the positive XY quadrant. Note that the
+    "center" parameter in the mlx script does not actually center the square,
+    not sure what it is doing. Instead this is set to false, which places
+    the plane in the -X,+Y quadrant, and it is translated to the
+    appropriate position after creation.
+    """
+    if current_layer is not None:
+        current_layer += 1
+        last_layer += 1
+    size = util.check_list(size, 2)
+
+    script_file = open(script, 'a')
+    script_file.write('  <filter name="Grid Generator">\n' +
+
+                      '    <Param name="absScaleX" ' +
+                      'value="%s" ' % size[0] +
+                      'description="x scale" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="absolute scale on x (float)"/>\n' +
+
+                      '    <Param name="absScaleY" ' +
+                      'value="%s" ' % size[1] +
+                      'description="y scale" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="absolute scale on y (float)"/>\n' +
+
+                      '    <Param name="numVertX" ' +
+                      'value="%d" ' % (x_segments + 1) +
+                      'description="num vertices on x" ' +
+                      'type="RichInt" ' +
+                      'tooltip="number of vertices on x. it must be positive"/>\n' +
+
+                      '    <Param name="numVertY" ' +
+                      'value="%d" ' % (y_segments + 1) +
+                      'description="num vertices on y" ' +
+                      'type="RichInt" ' +
+                      'tooltip="number of vertices on y. it must be positive"/>\n' +
+
+                      '    <Param name="center" ' +
+                      'value="false" ' +
+                      'description="centered on origin" ' +
+                      'type="RichBool" ' +
+                      'tooltip="center grid generated by filter on origin.' +
+                      ' Grid is first generated and than moved into origin (using' +
+                      ' muparser lib to perform fast calc on every vertex)"/>\n' +
+
+                      '  </filter>\n')
+    script_file.close()
+    transform.function(script, z_func='rint(z)')
+    """This is to work around a bug in MeshLab whereby the Grid Generator does not
+    create zero values for z. Ref bug #458: https://sourceforge.net/p/meshlab/bugs/458/"""
+    if center:
+        transform.translate(script, value=[size[0] / 2, -size[1] / 2, 0])
+    else:
+        transform.translate(script, value=[size[0], 0, 0])
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
+
+
+def annulus(script='TEMP3D_default.mlx',
+            radius=None, radius1=None, radius2=None,
+            diameter=None, diameter1=None, diameter2=None,
+            cir_segments=32, color=None,
+            current_layer=None, last_layer=None):
+    """Create a 2D (surface) circle or annulus
+    radius1=1 # Outer radius of the circle
+    radius2=0 # Inner radius of the circle (if non-zero it creates an annulus)
+    color="" # specify a color name to apply vertex colors to the newly created mesh
+
+    OpenSCAD: parameters: diameter overrides radius, radius1 & radius2 override radius
+    """
+    if current_layer is not None:
+        current_layer += 1
+        last_layer += 1
+    if radius is not None and diameter is None:
+        if radius1 is None and diameter1 is None:
+            radius1 = radius
+        if radius2 is None and diameter2 is None:
+            radius2 = 0
+    if diameter is not None:
+        if radius1 is None and diameter1 is None:
+            radius1 = diameter / 2
+        if radius2 is None and diameter2 is None:
+            radius2 = 0
+    if diameter1 is not None:
+        radius1 = diameter1 / 2
+    if diameter2 is not None:
+        radius2 = diameter2 / 2
+    if radius1 is None:
+        radius1 = 1
+    if radius2 is None:
+        radius2 = 0
+
+    # Circle is created centered on the XY plane
+    script_file = open(script, 'a')
+    script_file.write('  <filter name="Annulus">\n' +
+
+                      '    <Param name="externalRadius" ' +
+                      'value="%s" ' % radius1 +
+                      'description="External Radius" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="External Radius of the annulus"/>\n' +
+
+                      '    <Param name="internalRadius" ' +
+                      'value="%s" ' % radius2 +
+                      'description="Internal Radius" ' +
+                      'type="RichFloat" ' +
+                      'tooltip="Internal Radius of the annulus"/>\n' +
+
+                      '    <Param name="sides" ' +
+                      'value="%d" ' % cir_segments +
+                      'description="Sides" ' +
+                      'type="RichInt" ' +
+                      'tooltip="Number of sides of the polygonal approximation of' +
+                      ' the annulus"/>\n' +
+
+                      '  </filter>\n')
+    script_file.close()
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
+
+
+def tube_open_round_hires(script='TEMP3D_default.mlx', height=1.0,
+               radius=None, radius1=None, radius2=None,
+               diameter=None, diameter1=None, diameter2=None,
+               cir_segments=32, rad_segments=1, height_segments=1,
+               center=False, simpleBottom=True, topZ=True, color=None,
+               current_layer=None, last_layer=None):
+    """ Creates a round open tube, e.g. a cylinder with no top or bottom.
+
+    Useful if you want to wrap it around and join the open ends together, forming a torus.
+    """
+
+
+def tube_open_square_hires():
+    """ Creates a square open tube, e.g. a box with no top or bottom.
+
+    Useful if you want to wrap it around and join the open ends together, forming a torus.
+    """
+
+
+def plane_hires_edges():
+    """ Creates a plane with a specified number of vertices
+    on it sides, but no vertices on the interior.
+
+    Currently used to create a simpler bottom for cube_hires."""
+
+
+def half_sphere_hires():
+    ...
+
+
+def cube_hires(script='TEMP3D_default.mlx', size=1.0,
+               x_segments=1, y_segments=1, z_segments=1,
+               simpleBottom=True, topZ=True,
+               centerXY=False, center=False, color=None,
+               current_layer=None, last_layer=None):
+    """Create a box with user defined number of segments in each direction.
+
+    Grid spacing is the same as its dimensions (spacing = 1) and its
+    thickness is one. Intended to be used for e.g. deforming using functions
+    or a height map (lithopanes) and can be resized after creation.
+
+    Warnings: function uses layers.join
+
+    """
+    size = util.check_list(size, 3)
+
+    # Top
+    current_layer, last_layer = plane(
+        script, size, x_segments, y_segments, current_layer=current_layer, last_layer=last_layer)
+
+    # Bottom
+    if simpleBottom:
+        current_layer, last_layer = plane(script, size=[size[0] + size[1] - 1, 1], x_segments=(
+            size[0] + size[1] - 1), y_segments=1, current_layer=current_layer, last_layer=last_layer)
+        # Deform left side
+        transform.function(script,
+                           x_func='if((y>0) and (x<%s),0,x)' % (size[1]),
+                           y_func='if((y>0) and (x<%s),x+1,y)' % (size[1]))
+        # Deform top
+        transform.function(script,
+                           x_func='if((y>0) and (x>=%s),x-%s+1,x)' % (
+                               size[1], size[1]),
+                           y_func='if((y>0) and (x>=%s),%s,y)' % (size[1], size[1]))
+        # Deform right side
+        transform.function(script,
+                           x_func='if((y<1) and (x>=%s),%s,x)' % (
+                               size[0], size[0]),
+                           y_func='if((y<1) and (x>=%s),x-%s,y)' % (size[0], size[0]))
+    else:
+        current_layer, last_layer = layers.duplicate(
+            script, current_layer=current_layer, last_layer=last_layer)
+    transform.translate(script, [0, 0, -size[2]])
+
+    # X sides
+    current_layer, last_layer = plane(script, [size[0], size[2]],
+                                      x_segments=x_segments,
+                                      y_segments=z_segments,
+                                      current_layer=current_layer,
+                                      last_layer=last_layer)
+    transform.rotate(script, 'x', 90)
+    transform.translate(script, [0, 0, -size[2]])
+    current_layer, last_layer = layers.duplicate(script,
+                                                 current_layer=current_layer,
+                                                 last_layer=last_layer)
+    transform.translate(script, [0, size[1], 0])
+
+    # Y sides
+    current_layer, last_layer = plane(script, [size[1], size[2]],
+                                      x_segments=y_segments,
+                                      y_segments=z_segments,
+                                      current_layer=current_layer,
+                                      last_layer=last_layer)
+    transform.rotate(script, 'x', 90)
+    transform.rotate(script, 'z', 90)
+    transform.translate(script, [0, 0, -size[2]])
+    current_layer, last_layer = layers.duplicate(script,
+                                                 current_layer=current_layer,
+                                                 last_layer=last_layer)
+    transform.translate(script, [size[0], 0, 0])
+
+    current_layer, last_layer = layers.join(script,
+                                            current_layer=current_layer,
+                                            last_layer=last_layer)
+    clean.merge_vert(script, threshold=0.0001)
+    normals.fix(script)
+
+    if not topZ:
+        transform.translate(script, [0, 0, size[2]])
+    if centerXY:
+        transform.translate(script, [-size[0] / 2, -size[1] / 2, 0])
+    elif center:
+        transform.translate(script, [-size[0] / 2, -size[1] / 2, size[2] / 2])
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
+
+
+def annulus_hires(script='TEMP3D_default.mlx',
+                  radius=None, radius1=None, radius2=None,
+                  diameter=None, diameter1=None, diameter2=None,
+                  cir_segments=32, rad_segments=1, color=None,
+                  current_layer=None, last_layer=None):
+    """Create a cylinder with user defined number of segments
+
+    """
+    if radius is not None and diameter is None:
+        if radius1 is None and diameter1 is None:
+            radius1 = radius
+        if radius2 is None and diameter2 is None:
+            radius2 = 0
+    if diameter is not None:
+        if radius1 is None and diameter1 is None:
+            radius1 = diameter / 2
+        if radius2 is None and diameter2 is None:
+            radius2 = 0
+    if diameter1 is not None:
+        radius1 = diameter1 / 2
+    if diameter2 is not None:
+        radius2 = diameter2 / 2
+    if radius1 is None:
+        radius1 = 1
+    if radius2 is None:
+        radius2 = 0
+    ring = (radius1 - radius2) / rad_segments
+
+    for i in range(0, rad_segments):
+        current_layer, last_layer = annulus(script,
+                                            radius1=radius1 - i * ring,
+                                            radius2=radius1 - (i + 1) * ring,
+                                            cir_segments=cir_segments,
+                                            current_layer=current_layer,
+                                            last_layer=last_layer)
+    current_layer, last_layer = layers.join(script,
+                                            merge_vert=True,
+                                            current_layer=current_layer,
+                                            last_layer=last_layer)
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
+
+
+def tube_hires(script='TEMP3D_default.mlx', height=1.0,
+               radius=None, radius1=None, radius2=None,
+               diameter=None, diameter1=None, diameter2=None,
+               cir_segments=32, rad_segments=1, height_segments=1,
+               center=False, simpleBottom=True, topZ=True, color=None,
+               current_layer=None, last_layer=None):
+    """Create a cylinder with user defined number of segments
+
+    """
+
+    # TODO: add option to round the top of the cylinder, i.e. deform spherically
+    # TODO: add warnings if values are ignored
+    if radius is not None and diameter is None:
+        if radius1 is None and diameter1 is None:
+            radius1 = radius
+        if radius2 is None and diameter2 is None:
+            radius2 = 0
+    if diameter is not None:
+        if radius1 is None and diameter1 is None:
+            radius1 = diameter / 2
+        if radius2 is None and diameter2 is None:
+            radius2 = 0
+    if diameter1 is not None:
+        radius1 = diameter1 / 2
+    if diameter2 is not None:
+        radius2 = diameter2 / 2
+    if radius1 is None:
+        radius1 = 1
+    if radius2 is None:
+        radius2 = 0
+
+    current_layer, last_layer = annulus_hires(script,
+                                              radius1=radius1,
+                                              radius2=radius2,
+                                              cir_segments=cir_segments,
+                                              rad_segments=rad_segments,
+                                              current_layer=current_layer,
+                                              last_layer=last_layer)
+    if simpleBottom:
+        current_layer, last_layer = annulus(script,
+                                            radius1=radius1,
+                                            radius2=radius2,
+                                            cir_segments=cir_segments,
+                                            current_layer=current_layer,
+                                            last_layer=last_layer)
+    else:
+        current_layer, last_layer = layers.duplicate(script,
+                                                     current_layer=current_layer,
+                                                     last_layer=last_layer)
+    transform.translate(script, [0, 0, -height])
+
+    current_layer, last_layer = plane(script,
+                                      [2 * math.pi * radius1, height],
+                                      x_segments=cir_segments,
+                                      y_segments=height_segments,
+                                      current_layer=current_layer,
+                                      last_layer=last_layer)
+    transform.rotate(script, 'x', 90)
+    transform.translate(script, [math.pi * radius1 / 2, 0, -height])
+    transform.wrap2cylinder(script, radius1)
+    if radius2 != 0:
+        current_layer, last_layer = plane(script,
+                                          [2 * math.pi * radius2, height],
+                                          x_segments=cir_segments,
+                                          y_segments=height_segments,
+                                          current_layer=current_layer,
+                                          last_layer=last_layer)
+        transform.rotate(script, 'x', 90)
+        transform.translate(script, [math.pi * radius2 / 2, 0, -height])
+        transform.wrap2cylinder(script, radius2)
+    current_layer, last_layer = layers.join(script,
+                                            current_layer=current_layer,
+                                            last_layer=last_layer)
+    clean.merge_vert(script, threshold=0.0001)
+    normals.fix(script)
+    if not topZ:
+        transform.translate(script, [0, 0, height])
+    if center:
+        transform.translate(script, [0, 0, height / 2])
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
+
+# TODO: create doublehelix function, takes spacing between helixes and
+# rungs, rung diameter
