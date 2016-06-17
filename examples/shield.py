@@ -41,12 +41,12 @@ def main():
     segments = 50
     # star_points = number of points (or sides) of the star
     star_points = 5
-    # radius = radius of circle circumscribing the star
-    radius = 2
-    # ring = thickness of the colored rings
-    ring = 1
+    # star_radius = radius of circle circumscribing the star
+    star_radius = 2
+    # ring_thickness = thickness of the colored rings
+    ring_thickness = 1
     # sphere_radius = radius of sphere the shield will be deformed to
-    sphere_radius = 2 * (radius + 3 * ring)
+    sphere_radius = 2 * (star_radius + 3 * ring_thickness)
 
     # Star calculations:
     # Visually approximate a star by using multiple diamonds (i.e. scaled
@@ -54,7 +54,7 @@ def main():
     # consider a central polygon with triangles attached to the edges, all
     # circumscribed by a circle.
     # polygon_radius = distance from center of circle to polygon edge midpoint
-    polygon_radius = radius / \
+    polygon_radius = star_radius / \
         (1 + math.tan(math.radians(180 / star_points)) /
          math.tan(math.radians(90 / star_points)))
     # width = 1/2 width of polygon edge/outer triangle bottom
@@ -68,20 +68,20 @@ def main():
     # Create the colored front of the shield using several concentric
     # annuluses; combine them together and subdivide so we have more vertices
     # to give a smoother deformation later.
-    mlx.create.annulus(radius=radius, cir_segments=segments, color='blue')
+    mlx.create.annulus(radius=star_radius, cir_segments=segments, color='blue')
     mlx.create.annulus(
-        radius1=radius + ring,
-        radius2=radius,
+        radius1=star_radius + ring_thickness,
+        radius2=star_radius,
         cir_segments=segments,
         color='red')
     mlx.create.annulus(
-        radius1=radius + 2 * ring,
-        radius2=radius + ring,
+        radius1=star_radius + 2 * ring_thickness,
+        radius2=star_radius + ring_thickness,
         cir_segments=segments,
         color='white')
     mlx.create.annulus(
-        radius1=radius + 3 * ring,
-        radius2=radius + 2 * ring,
+        radius1=star_radius + 3 * ring_thickness,
+        radius2=star_radius + 2 * ring_thickness,
         cir_segments=segments,
         color='red')
     mlx.layers.join()
@@ -90,7 +90,7 @@ def main():
     # Create the inside surface of the shield & translate down slightly so it
     # doesn't overlap the front.
     mlx.create.annulus(
-        radius1=radius + 3 * ring,
+        radius1=star_radius + 3 * ring_thickness,
         cir_segments=segments,
         color='silver')
     mlx.transform.rotate(axis='y', angle=180)

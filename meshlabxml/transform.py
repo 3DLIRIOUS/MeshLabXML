@@ -3,6 +3,8 @@
 import sys
 import math
 
+from . import util
+
 
 def translate2(script='TEMP3D_default.mlx', value=(0.0, 0.0, 0.0),
                center=False, freeze=True, all_layers=False,
@@ -220,12 +222,13 @@ def scale2(script='TEMP3D_default.mlx', value=1.0,
            uniform=True, center_pt='origin',
            custom_center_pt=None, unit=False, freeze=True,
            all_layers=False, current_layer=None, last_layer=None):
-    # Convert value to list if it isn't already
+    """# Convert value to list if it isn't already
     if not isinstance(value, list):
         value = list(value)
     # If a single value was supplied use it for all 3 axes
     if len(value) == 1:
-        value = [value[0], value[0], value[0]]
+        value = [value[0], value[0], value[0]]"""
+    value = util.make_list(value, 3)
     # Convert center point name into number
     if center_pt.lower() == 'origin':
         center_pt_num = 0
@@ -315,12 +318,13 @@ def scale(script='TEMP3D_default.mlx', value=1.0,
           current_layer=None, last_layer=None):
     """An alternative scale implementation that uses a geometric function.
     This is more accurate than the built-in version."""
-    # Convert value to list if it isn't already
+    """# Convert value to list if it isn't already
     if not isinstance(value, list):
         value = list(value)
     # If a single value was supplied use it for all 3 axes
     if len(value) == 1:
-        value = [value[0], value[0], value[0]]
+        value = [value[0], value[0], value[0]]"""
+    value = util.make_list(value, 3)
     function(script,
              x_func='x*%s' % value[0],
              y_func='y*%s' % value[1],

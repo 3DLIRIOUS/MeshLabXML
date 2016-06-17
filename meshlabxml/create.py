@@ -8,7 +8,6 @@ from . import util
 from . import vert_color
 from . import clean
 from . import layers
-from . import normals
 
 
 def cube(script='TEMP3D_default.mlx', size=1.0,
@@ -18,13 +17,13 @@ def cube(script='TEMP3D_default.mlx', size=1.0,
     if current_layer is not None:
         current_layer += 1
         last_layer += 1
-    # Convert size to list if it isn't already
+    """# Convert size to list if it isn't already
     if not isinstance(size, list):
         size = list(size)
     # If a single value was supplied use it for all 3 axes
     if len(size) == 1:
-        size = [size[0], size[0], size[0]]
-    #size = util.check_list(size, 3)
+        size = [size[0], size[0], size[0]]"""
+    size = util.make_list(size, 3)
     script_file = open(script, 'a')
     script_file.write('  <filter name="Box">\n' +
 
@@ -318,7 +317,13 @@ def plane(script='TEMP3D_default.mlx', size=1.0,
     if current_layer is not None:
         current_layer += 1
         last_layer += 1
-    size = util.check_list(size, 2)
+    """# Convert size to list if it isn't already
+    if not isinstance(size, list):
+        size = list(size)
+    # If a single value was supplied use it for all 2 axes
+    if len(size) == 1:
+        size = [size[0], size[0]]"""
+    size = util.make_list(size, 2)
 
     script_file = open(script, 'a')
     script_file.write('  <filter name="Grid Generator">\n' +
@@ -433,30 +438,148 @@ def annulus(script='TEMP3D_default.mlx',
     return current_layer, last_layer
 
 
-def tube_open_round_hires(script='TEMP3D_default.mlx', height=1.0,
-               radius=None, radius1=None, radius2=None,
-               diameter=None, diameter1=None, diameter2=None,
-               cir_segments=32, rad_segments=1, height_segments=1,
-               center=False, simpleBottom=True, topZ=True, color=None,
-               current_layer=None, last_layer=None):
+def cylinder_open_hires(script='TEMP3D_default.mlx', height=1.0,
+                        radius=1, diameter=None,
+                        cir_segments=32, height_segments=1,
+                        invert_normals=False, center=False, color=None,
+                        current_layer=None, last_layer=None):
     """ Creates a round open tube, e.g. a cylinder with no top or bottom.
 
     Useful if you want to wrap it around and join the open ends together, forming a torus.
+
+    invert_normals (bool (optional)): if True normals point outward; in false normals point inward.
     """
+    if diameter is not None:
+        radius = diameter / 2
+
+    if center:
+        z_translate = -height / 2
+    else:
+        z_translate = 0.0
+
+    current_layer, last_layer = plane(script,
+                                      [2 * math.pi * radius, height],
+                                      x_segments=cir_segments,
+                                      y_segments=height_segments,
+                                      current_layer=current_layer,
+                                      last_layer=last_layer)
+    transform.rotate(script, 'x', 90)
+    transform.translate(script, [math.pi * radius / 2, 0, z_translate])
+    if not invert_normals:
+        transform.rotate(script, 'z', 180)
+    transform.wrap2cylinder(script, radius)
+    clean.merge_vert(script, threshold=0.00001)
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
 
 
-def tube_open_square_hires():
+def cube_open_hires(script='TEMP3D_default.mlx', size=1.0,
+                    x_segments=1, y_segments=1, z_segments=1,
+                    center=False, color=None,
+                    current_layer=None, last_layer=None):
     """ Creates a square open tube, e.g. a box with no top or bottom.
 
     Useful if you want to wrap it around and join the open ends together, forming a torus.
     """
+    """# Convert size to list if it isn't already
+    if not isinstance(size, list):
+        size = list(size)
+    # If a single value was supplied use it for all 3 axes
+    if len(size) == 1:
+        size = [size[0], size[0], size[0]]"""
+    size = util.make_list(size, 3)
+
+    # X sides
+    current_layer, last_layer = plane(script, [size[0], size[2]],
+                                      x_segments=x_segments,
+                                      y_segments=z_segments,
+                                      current_layer=current_layer,
+                                      last_layer=last_layer)
+    transform.rotate(script, 'x', 90)
+    #transform.translate(script, [0, 0, -size[2]])
+    current_layer, last_layer = layers.duplicate(script,
+                                                 current_layer=current_layer,
+                                                 last_layer=last_layer)
+    # Rotate to correct normals
+    transform.rotate(script, 'z', 180)
+    transform.translate(script, [size[0], size[1], 0])
+
+    # Y sides
+    current_layer, last_layer = plane(script, [size[2], size[1]],
+                                      x_segments=z_segments,
+                                      y_segments=y_segments,
+                                      current_layer=current_layer,
+                                      last_layer=last_layer)
+    transform.rotate(script, 'y', -90)
+    #transform.rotate(script, 'z', 90)
+    #transform.translate(script, [0, 0, -size[2]])
+    current_layer, last_layer = layers.duplicate(script,
+                                                 current_layer=current_layer,
+                                                 last_layer=last_layer)
+    # Rotate to correct normals
+    transform.rotate(script, 'z', 180)
+    transform.translate(script, [size[0], size[1], 0])
+
+    current_layer, last_layer = layers.join(script,
+                                            current_layer=current_layer,
+                                            last_layer=last_layer)
+    clean.merge_vert(script, threshold=0.00001)
+    # normals.fix(script)
+    if center:
+        transform.translate(script, [-size[0] / 2, -size[1] / 2, -size[2] / 2])
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
 
 
-def plane_hires_edges():
+def plane_hires_edges(script='TEMP3D_default.mlx', size=1.0,
+                      x_segments=1, y_segments=1,
+                      center=False, color=None,
+                      current_layer=None, last_layer=None):
     """ Creates a plane with a specified number of vertices
     on it sides, but no vertices on the interior.
 
-    Currently used to create a simpler bottom for cube_hires."""
+    Currently used to create a simpler bottom for cube_hires.
+
+    """
+    if current_layer is not None:
+        current_layer += 1
+        last_layer += 1
+    size = util.make_list(size, 2)
+
+    plane(script, size=[x_segments + y_segments - 1, 1],
+          x_segments=(x_segments + y_segments - 1), y_segments=1)
+    # Deform left side
+    transform.function(
+        script,
+        x_func='if((y>0) and (x<%s),0,x)' % (y_segments),
+        y_func='if((y>0) and (x<%s),(x+1)*%s,y)' % (
+            y_segments, size[1] / y_segments))
+    # Deform top
+    transform.function(
+        script,
+        x_func='if((y>0) and (x>=%s),(x-%s+1)*%s,x)' % (
+            y_segments, y_segments, size[0] / x_segments),
+        y_func='if((y>0) and (x>=%s),%s,y)' % (y_segments, size[1]))
+    # Deform right side
+    transform.function(
+        script,
+        x_func='if((y<.00001) and (x>%s),%s,x)' % (
+            x_segments, size[0]),
+        y_func='if((y<.00001) and (x>%s),(x-%s)*%s,y)' % (
+            x_segments, x_segments, size[1] / y_segments))
+    # Deform bottom
+    transform.function(
+        script,
+        x_func='if((y<.00001) and (x<=%s) and (x>0),(x)*%s,x)' % (
+            x_segments, size[0] / x_segments),
+        y_func='if((y<.00001) and (x<=%s) and (x>0),0,y)' % (x_segments))
+    if center:
+        transform.translate(script, [-size[0] / 2, -size[1] / 2])
+    if color is not None:
+        vert_color.function(script, color=color)
+    return current_layer, last_layer
 
 
 def half_sphere_hires():
@@ -465,8 +588,7 @@ def half_sphere_hires():
 
 def cube_hires(script='TEMP3D_default.mlx', size=1.0,
                x_segments=1, y_segments=1, z_segments=1,
-               simpleBottom=True, topZ=True,
-               centerXY=False, center=False, color=None,
+               simple_bottom=True, center=False, color=None,
                current_layer=None, last_layer=None):
     """Create a box with user defined number of segments in each direction.
 
@@ -477,74 +599,52 @@ def cube_hires(script='TEMP3D_default.mlx', size=1.0,
     Warnings: function uses layers.join
 
     """
-    size = util.check_list(size, 3)
+    """# Convert size to list if it isn't already
+    if not isinstance(size, list):
+        size = list(size)
+    # If a single value was supplied use it for all 3 axes
+    if len(size) == 1:
+        size = [size[0], size[0], size[0]]"""
+    size = util.make_list(size, 3)
 
     # Top
-    current_layer, last_layer = plane(
-        script, size, x_segments, y_segments, current_layer=current_layer, last_layer=last_layer)
+    current_layer, last_layer = plane(script,
+                                      size,
+                                      x_segments,
+                                      y_segments,
+                                      current_layer=current_layer,
+                                      last_layer=last_layer)
+    transform.translate(script, [0, 0, size[2]])
 
     # Bottom
-    if simpleBottom:
-        current_layer, last_layer = plane(script, size=[size[0] + size[1] - 1, 1], x_segments=(
-            size[0] + size[1] - 1), y_segments=1, current_layer=current_layer, last_layer=last_layer)
-        # Deform left side
-        transform.function(script,
-                           x_func='if((y>0) and (x<%s),0,x)' % (size[1]),
-                           y_func='if((y>0) and (x<%s),x+1,y)' % (size[1]))
-        # Deform top
-        transform.function(script,
-                           x_func='if((y>0) and (x>=%s),x-%s+1,x)' % (
-                               size[1], size[1]),
-                           y_func='if((y>0) and (x>=%s),%s,y)' % (size[1], size[1]))
-        # Deform right side
-        transform.function(script,
-                           x_func='if((y<1) and (x>=%s),%s,x)' % (
-                               size[0], size[0]),
-                           y_func='if((y<1) and (x>=%s),x-%s,y)' % (size[0], size[0]))
+    if simple_bottom:
+        current_layer, last_layer = plane_hires_edges(
+            script, size, x_segments, y_segments,
+            current_layer=current_layer,
+            last_layer=last_layer)
     else:
-        current_layer, last_layer = layers.duplicate(
-            script, current_layer=current_layer, last_layer=last_layer)
-    transform.translate(script, [0, 0, -size[2]])
-
-    # X sides
-    current_layer, last_layer = plane(script, [size[0], size[2]],
-                                      x_segments=x_segments,
-                                      y_segments=z_segments,
-                                      current_layer=current_layer,
-                                      last_layer=last_layer)
-    transform.rotate(script, 'x', 90)
-    transform.translate(script, [0, 0, -size[2]])
-    current_layer, last_layer = layers.duplicate(script,
-                                                 current_layer=current_layer,
-                                                 last_layer=last_layer)
+        current_layer, last_layer = layers.duplicate(script,
+                                                     current_layer=current_layer,
+                                                     last_layer=last_layer)
+        transform.translate(script, [0, 0, -size[2]])
+    # Rotate to correct normals
+    transform.rotate(script, 'x', 180)
     transform.translate(script, [0, size[1], 0])
 
-    # Y sides
-    current_layer, last_layer = plane(script, [size[1], size[2]],
-                                      x_segments=y_segments,
-                                      y_segments=z_segments,
-                                      current_layer=current_layer,
-                                      last_layer=last_layer)
-    transform.rotate(script, 'x', 90)
-    transform.rotate(script, 'z', 90)
-    transform.translate(script, [0, 0, -size[2]])
-    current_layer, last_layer = layers.duplicate(script,
-                                                 current_layer=current_layer,
-                                                 last_layer=last_layer)
-    transform.translate(script, [size[0], 0, 0])
+    # Sides
+    current_layer, last_layer = cube_open_hires(
+        script=script, size=size, x_segments=x_segments,
+        y_segments=y_segments, z_segments=z_segments,
+        current_layer=current_layer, last_layer=last_layer)
 
-    current_layer, last_layer = layers.join(script,
-                                            current_layer=current_layer,
-                                            last_layer=last_layer)
-    clean.merge_vert(script, threshold=0.0001)
-    normals.fix(script)
-
-    if not topZ:
-        transform.translate(script, [0, 0, size[2]])
-    if centerXY:
-        transform.translate(script, [-size[0] / 2, -size[1] / 2, 0])
-    elif center:
-        transform.translate(script, [-size[0] / 2, -size[1] / 2, size[2] / 2])
+    # Join everything together
+    current_layer, last_layer = layers.join(
+        script,
+        current_layer=current_layer, last_layer=last_layer)
+    # Need some tolerance on merge_vert due to rounding errors
+    clean.merge_vert(script, threshold=0.00001)
+    if center:
+        transform.translate(script, [-size[0] / 2, -size[1] / 2, -size[2] / 2])
     if color is not None:
         vert_color.function(script, color=color)
     return current_layer, last_layer
@@ -598,14 +698,15 @@ def tube_hires(script='TEMP3D_default.mlx', height=1.0,
                radius=None, radius1=None, radius2=None,
                diameter=None, diameter1=None, diameter2=None,
                cir_segments=32, rad_segments=1, height_segments=1,
-               center=False, simpleBottom=True, topZ=True, color=None,
+               center=False, simple_bottom=False, color=None,
                current_layer=None, last_layer=None):
     """Create a cylinder with user defined number of segments
 
     """
 
     # TODO: add option to round the top of the cylinder, i.e. deform spherically
-    # TODO: add warnings if values are ignored
+    # TODO: add warnings if values are ignored, e.g. if you specify both radius
+    # and diameter.
     if radius is not None and diameter is None:
         if radius1 is None and diameter1 is None:
             radius1 = radius
@@ -625,6 +726,7 @@ def tube_hires(script='TEMP3D_default.mlx', height=1.0,
     if radius2 is None:
         radius2 = 0
 
+    # Create top
     current_layer, last_layer = annulus_hires(script,
                                               radius1=radius1,
                                               radius2=radius2,
@@ -632,7 +734,10 @@ def tube_hires(script='TEMP3D_default.mlx', height=1.0,
                                               rad_segments=rad_segments,
                                               current_layer=current_layer,
                                               last_layer=last_layer)
-    if simpleBottom:
+    transform.translate(script, [0, 0, height])
+
+    # Create bottom
+    if simple_bottom:
         current_layer, last_layer = annulus(script,
                                             radius1=radius1,
                                             radius2=radius2,
@@ -643,39 +748,46 @@ def tube_hires(script='TEMP3D_default.mlx', height=1.0,
         current_layer, last_layer = layers.duplicate(script,
                                                      current_layer=current_layer,
                                                      last_layer=last_layer)
-    transform.translate(script, [0, 0, -height])
+        transform.translate(script, [0, 0, -height])
+    # Rotate to correct normals
+    transform.rotate(script, 'x', 180)
 
-    current_layer, last_layer = plane(script,
-                                      [2 * math.pi * radius1, height],
-                                      x_segments=cir_segments,
-                                      y_segments=height_segments,
-                                      current_layer=current_layer,
-                                      last_layer=last_layer)
-    transform.rotate(script, 'x', 90)
-    transform.translate(script, [math.pi * radius1 / 2, 0, -height])
-    transform.wrap2cylinder(script, radius1)
+    # Create outer tube
+    cylinder_open_hires(script, height, radius1,
+                        cir_segments=cir_segments,
+                        height_segments=height_segments)
+
+    # Create inner tube
     if radius2 != 0:
-        current_layer, last_layer = plane(script,
-                                          [2 * math.pi * radius2, height],
-                                          x_segments=cir_segments,
-                                          y_segments=height_segments,
-                                          current_layer=current_layer,
-                                          last_layer=last_layer)
-        transform.rotate(script, 'x', 90)
-        transform.translate(script, [math.pi * radius2 / 2, 0, -height])
-        transform.wrap2cylinder(script, radius2)
-    current_layer, last_layer = layers.join(script,
-                                            current_layer=current_layer,
-                                            last_layer=last_layer)
-    clean.merge_vert(script, threshold=0.0001)
-    normals.fix(script)
-    if not topZ:
-        transform.translate(script, [0, 0, height])
+        cylinder_open_hires(script, height, radius2,
+                            cir_segments=cir_segments,
+                            height_segments=height_segments,
+                            invert_normals=True)
+
+    # Join everything together
+    current_layer, last_layer = layers.join(
+        script,
+        current_layer=current_layer, last_layer=last_layer)
+    # Need some tolerance on merge_vert due to rounding errors
+    clean.merge_vert(script, threshold=0.00001)
     if center:
-        transform.translate(script, [0, 0, height / 2])
+        transform.translate(script, [0, 0, -height / 2])
     if color is not None:
         vert_color.function(script, color=color)
     return current_layer, last_layer
 
-# TODO: create doublehelix function, takes spacing between helixes and
-# rungs, rung diameter
+
+def triangle():
+    """Create a triangle by specifying 3 points
+
+    Under the hood: create a plane, delete one point, then move other vertices.
+    """
+    ...
+
+
+def dna(sequence='GATTACA'):
+    """Create  doublehelix function, takes spacing between helixes and
+    rungs, rung diameter
+
+    """
+    ...

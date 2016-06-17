@@ -18,20 +18,22 @@ def deselect(script='TEMP3D_default.mlx', face=True,
     """
     script_file = open(script, 'a')
     script_file.write('  <filter name="Select None">\n')
-    script_file.write(' '.join(['    <Param',
-                               'name="allFaces"',
-                               'value="%s"' % str(face).lower(),
-                               'description="De-select all Faces"',
-                               'type="RichBool"',
-                               'tooltip="If true the filter will de-select all the faces."',
-                               '/>\n']))
-    script_file.write(' '.join(['    <Param',
-                               'name="allVerts"',
-                               'value="%s"' % str(vert).lower(),
-                               'description="De-select all Vertices"',
-                               'type="RichBool"',
-                               'tooltip="If true the filter will de-select all the vertices."',
-                               '/>\n']))
+    script_file.write(' '.join([
+        '    <Param',
+        'name="allFaces"',
+        'value="%s"' % str(face).lower(),
+        'description="De-select all Faces"',
+        'type="RichBool"',
+        'tooltip="If true the filter will de-select all the faces."',
+        '/>\n']))
+    script_file.write(' '.join([
+        '    <Param',
+        'name="allVerts"',
+        'value="%s"' % str(vert).lower(),
+        'description="De-select all Vertices"',
+        'type="RichBool"',
+        'tooltip="If true the filter will de-select all the vertices."',
+        '/>\n']))
     script_file.write('  </filter>\n')
     """script_file.write('  <filter name="Select None">\n' +
 
