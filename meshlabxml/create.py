@@ -231,7 +231,7 @@ def torus(script='TEMP3D_default.mlx',
     Args:
         major_radius (float, (optional)): radius from the origin to the
             center of the cross sections
-        minor_radius (float, (optional)): radius of the torus’ cross
+        minor_radius (float, (optional)): radius of the torus cross
             section
         inner_diameter (float, (optional)): inner diameter of torus. If
             both inner_diameter and outer_diameter are provided then
@@ -583,7 +583,7 @@ def plane_hires_edges(script='TEMP3D_default.mlx', size=1.0,
 
 
 def half_sphere_hires():
-    ...
+    pass
 
 
 def cube_hires(script='TEMP3D_default.mlx', size=1.0,
@@ -782,7 +782,7 @@ def triangle():
 
     Under the hood: create a plane, delete one point, then move other vertices.
     """
-    ...
+    pass
 
 
 def dna(sequence='GATTACA'):
@@ -790,4 +790,4 @@ def dna(sequence='GATTACA'):
     rungs, rung diameter
 
     """
-    ...
+    pass

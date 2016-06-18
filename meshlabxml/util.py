@@ -23,7 +23,11 @@ def to_float(num):
 
 
 def delete_all(filename):
-    """delete files in the current directory that match a pattern. Intended for temp files, e.g. mlx.delete('TEMP3D*')"""
+    """delete files in the current directory that match a pattern.
+    
+    Intended for temp files, e.g. mlx.delete('TEMP3D*').
+    
+    """
     for fread in glob(filename):
         os.remove(fread)
 

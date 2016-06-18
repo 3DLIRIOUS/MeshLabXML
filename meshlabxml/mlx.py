@@ -280,7 +280,7 @@ def find_texture_files(fbasename, log=None):
     texture_files_unique = list(set(texture_files))
     if log is not None:
         log_file = open(log, 'a')
-        log_file.write('Results of find_textureFiles:\n')
+        log_file.write('Results of find_texture_files:\n')
         log_file.write('fbasename = %s\n' % fbasename)
         log_file.write('texture_files = %s\n' % texture_files)
         log_file.write('texture_files_unique = %s\n' % texture_files_unique)
