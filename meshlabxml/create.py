@@ -468,7 +468,7 @@ def cylinder_open_hires(script='TEMP3D_default.mlx', height=1.0,
     if not invert_normals:
         transform.rotate(script, 'z', 180)
     transform.wrap2cylinder(script, radius)
-    clean.merge_vert(script, threshold=0.00001)
+    clean.merge_vert(script, threshold=0.00002)
     if color is not None:
         vert_color.function(script, color=color)
     return current_layer, last_layer
@@ -524,7 +524,7 @@ def cube_open_hires(script='TEMP3D_default.mlx', size=1.0,
     current_layer, last_layer = layers.join(script,
                                             current_layer=current_layer,
                                             last_layer=last_layer)
-    clean.merge_vert(script, threshold=0.00001)
+    clean.merge_vert(script, threshold=0.00002)
     # normals.fix(script)
     if center:
         transform.translate(script, [-size[0] / 2, -size[1] / 2, -size[2] / 2])
@@ -642,7 +642,7 @@ def cube_hires(script='TEMP3D_default.mlx', size=1.0,
         script,
         current_layer=current_layer, last_layer=last_layer)
     # Need some tolerance on merge_vert due to rounding errors
-    clean.merge_vert(script, threshold=0.00001)
+    clean.merge_vert(script, threshold=0.00002)
     if center:
         transform.translate(script, [-size[0] / 2, -size[1] / 2, -size[2] / 2])
     if color is not None:
@@ -769,7 +769,7 @@ def tube_hires(script='TEMP3D_default.mlx', height=1.0,
         script,
         current_layer=current_layer, last_layer=last_layer)
     # Need some tolerance on merge_vert due to rounding errors
-    clean.merge_vert(script, threshold=0.00001)
+    clean.merge_vert(script, threshold=0.00002)
     if center:
         transform.translate(script, [0, 0, -height / 2])
     if color is not None:

@@ -160,11 +160,11 @@ def cyclic_rainbow(script='TEMP3D_default.mlx', direction='sphere',
     freq = frequency
     phase = phase
     """
-    start_pt = util.check_list(start_pt, 3)
-    amplitude = util.check_list(amplitude, 4)
-    center = util.check_list(center, 4)
-    freq = util.check_list(freq, 4)
-    phase = util.check_list(phase, 4)
+    start_pt = util.make_list(start_pt, 3)
+    amplitude = util.make_list(amplitude, 4)
+    center = util.make_list(center, 4)
+    freq = util.make_list(freq, 4)
+    phase = util.make_list(phase, 4)
 
     if direction.lower() == 'sphere':
         increment = 'sqrt((x-%s)^2+(y-%s)^2+(z-%s)^2)' % (
