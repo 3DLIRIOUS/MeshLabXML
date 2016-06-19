@@ -8,30 +8,76 @@ from . import util
 def function(script='TEMP3D_default.mlx', red=255, green=255,
              blue=255, alpha=255, color=None, current_layer=None,
              last_layer=None):
-    """
-    Color function using muparser lib to generate new RGBA color for every
-    vertex. Red, Green, Blue and Alpha channels may be defined specifying
-    a function in their respective fields.
-    It's possible to use the following per-vertex variables in the
-    expression:
-      x,y,z (position),
-      nx,ny,nz (normal),
-      r,g,b,a (color),
-      q (quality),
-      rad (radius),
-      vi (vertex index),
-      vtu,vtv,ti (texture coords and texture index),
-      vsel (is the vertex selected? 1 yes, 0 no)
-      and all custom vertex attributes already defined by user.
-    Function should produce values in the range 0-255
+    """Color function using muparser lib to generate new RGBA color for every vertex
+
+    See help(mlx.muparser_ref) for muparser reference documentation.
+
+    Insert four functions; one for red, green, blue  and alpha channel respectively.
+    It's possible to use the following per-vertex variables in the expression:
+
+    Variables (per vertex):
+        x, y, z (coordinates)
+        nx, ny, nz (normal)
+        r, g, b, a (color)
+        q (quality)
+        rad
+        vi (vertex index)
+        vtu, vtv (texture coordinates)
+        ti (texture index)
+        vsel (is the vertex selected? 1 yes, 0 no)
+        and all custom vertex attributes already defined by user.
+
+    Args:
+        red (str [0, 255]): function to generate red component
+        green (str [0, 255]): function to generate green component
+        blue (str [0, 255]): function to generate blue component
+        alpha (str [0, 255]): function to generate alpha component
+        color (str): name of one of the 140 HTML Color Names defined
+            in CSS & SVG.
+            Ref: https://en.wikipedia.org/wiki/Web_colors#X11_color_names
+            If not None this will override the per component variables.
+            Names and values are defined in color_names.txt
+
+    Returns:
+        current_layer, last_layer
+
     """
     # TODO: add options for HSV
-
+    # https://www.cs.rit.edu/~ncs/color/t_convert.html
     if color is not None:
         red, green, blue = util.color_values(color)
-
     script_file = open(script, 'a')
-    script_file.write('  <filter name="Per Vertex Color Function">\n' +
+    script_file.write('  <filter name="Per Vertex Color Function">\n')
+    script_file.write(' '.join([
+        '    <Param',
+        'name="x"',
+        'value="%s"' % str(red).replace('<', '&lt;'),
+        'description="func r = "',
+        'type="RichString"',
+        '/>\n']))
+    script_file.write(' '.join([
+        '    <Param',
+        'name="y"',
+        'value="%s"' % str(green).replace('<', '&lt;'),
+        'description="func g = "',
+        'type="RichString"',
+        '/>\n']))
+    script_file.write(' '.join([
+        '    <Param',
+        'name="z"',
+        'value="%s"' % str(blue).replace('<', '&lt;'),
+        'description="func b = "',
+        'type="RichString"',
+        '/>\n']))
+    script_file.write(' '.join([
+        '    <Param',
+        'name="a"',
+        'value="%s"' % str(alpha).replace('<', '&lt;'),
+        'description="func alpha = "',
+        'type="RichString"',
+        '/>\n']))
+    script_file.write('  </filter>\n')
+    """script_file.write('  <filter name="Per Vertex Color Function">\n' +
 
                       '    <Param name="x" ' +
                       'value="%s" ' % str(red).replace('<', '&lt;') +
@@ -61,7 +107,7 @@ def function(script='TEMP3D_default.mlx', red=255, green=255,
                       'tooltip="Function to generate Alpha component. Expected Range' +
                       ' 0-255"/>\n' +
 
-                      '  </filter>\n')
+                      '  </filter>\n')"""
     script_file.close()
     return current_layer, last_layer
 
@@ -102,9 +148,9 @@ def voronoi(script='TEMP3D_default.mlx', target_layer=0,
 
 
 def cyclic_rainbow(script='TEMP3D_default.mlx', direction='sphere',
-                   start_pt=[0, 0, 0], amplitude=255 / 2, center=255 / 2,
+                   start_pt=(0, 0, 0), amplitude=255 / 2, center=255 / 2,
                    freq=0.8,
-                   phase=[0, 120, 240, 0],
+                   phase=(0, 120, 240, 0),
                    alpha=False, current_layer=None, last_layer=None):
     """Color your mesh vertices in a repeating rainbow pattern
     direction = sphere, x, y, z, function

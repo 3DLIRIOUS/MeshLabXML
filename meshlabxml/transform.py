@@ -351,8 +351,59 @@ def freeze_matrix(script='TEMP3D_default.mlx', all_layers=False,
 
 def function(script='TEMP3D_default.mlx', x_func='x', y_func='y', z_func='z',
              current_layer=None, last_layer=None):
+    """Geometric function using muparser lib to generate new Coordinates
+
+    See help(mlx.muparser_ref) for muparser reference documentation.
+
+    You can change x, y, z for every vertex according to the function specified.
+    It's possible to use the following per-vertex variables in the expression:
+
+    Variables (per vertex):
+        x, y, z (coordinates)
+        nx, ny, nz (normal)
+        r, g, b, a (color)
+        q (quality)
+        rad
+        vi (vertex index)
+        vtu, vtv (texture coordinates)
+        ti (texture index)
+        vsel (is the vertex selected? 1 yes, 0 no)
+        and all custom vertex attributes already defined by user.
+
+    Args:
+        x_func (str): function to generate new coordinates for x
+        y_func (str): function to generate new coordinates for y
+        z_func (str): function to generate new coordinates for z
+
+    Returns:
+        current_layer, last_layer
+
+    """
     script_file = open(script, 'a')
-    script_file.write('  <filter name="Geometric Function">\n' +
+    script_file.write('  <filter name="Geometric Function">\n')
+    script_file.write(' '.join([
+        '    <Param',
+        'name="x"',
+        'value="%s"' % str(x_func).replace('<', '&lt;'),
+        'description="func x = "',
+        'type="RichString"',
+        '/>\n']))
+    script_file.write(' '.join([
+        '    <Param',
+        'name="y"',
+        'value="%s"' % str(y_func).replace('<', '&lt;'),
+        'description="func y = "',
+        'type="RichString"',
+        '/>\n']))
+    script_file.write(' '.join([
+        '    <Param',
+        'name="z"',
+        'value="%s"' % str(z_func).replace('<', '&lt;'),
+        'description="func z = "',
+        'type="RichString"',
+        '/>\n']))
+    script_file.write('  </filter>\n')
+    """script_file.write('  <filter name="Geometric Function">\n' +
 
                       '    <Param name="x" ' +
                       'value="%s" ' % x_func.replace('<', '&lt;') +
@@ -373,7 +424,7 @@ def function(script='TEMP3D_default.mlx', x_func='x', y_func='y', z_func='z',
                       'tooltip="insert function to generate new coord for z"/>\n' +
 
                       '  </filter>\n')
-    script_file.close()
+    script_file.close()"""
     return current_layer, last_layer
 
 

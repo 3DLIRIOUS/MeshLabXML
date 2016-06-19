@@ -196,8 +196,42 @@ def vert_quality(script='TEMP3D_default.mlx', min_quality=0.0, max_quality=0.05,
 
 def face_function(script='TEMP3D_default.mlx',
                   function='(fi == 0)', current_layer=None, last_layer=None):
+    """Boolean function using muparser lib to perform face selection over current mesh.
+
+    See help(mlx.muparser_ref) for muparser reference documentation.
+
+    It's possible to use parenthesis, per-vertex variables and boolean operator:
+        (, ), and, or, <, >, =
+    It's possible to use per-face variables like attributes associated to the three
+    vertices of every face.
+
+    Variables (per face):
+        x0, y0, z0 for first vertex; x1,y1,z1 for second vertex; x2,y2,z2 for third vertex
+        nx0, ny0, nz0, nx1, ny1, nz1, etc. for normals
+        r0, g0, b0 for color
+        q0, q1, q2 for quality
+        wtu0, wtv0, wtu1, wtv1, wtu2, wtv2 (per wedge texture coordinates)
+
+    Args:
+        function (str): a boolean function that will be evaluated in order
+            to select a subset of faces.
+
+    Returns:
+        current_layer, last_layer
+
+    """
+
     script_file = open(script, 'a')
-    script_file.write('  <filter name="Conditional Face Selection">\n'
+    script_file.write('  <filter name="Conditional Face Selection">\n')
+    script_file.write(' '.join([
+        '    <Param',
+        'name="condSelect"',
+        'value="%s"' % str(function).replace('<', '&lt;'),
+        'description="boolean function"',
+        'type="RichString"',
+        '/>\n']))
+    script_file.write('  </filter>\n')
+    """script_file.write('  <filter name="Conditional Face Selection">\n'
 
                       + '    <Param name="condSelect" '
                       + 'value="%s" ' % function.replace('<', '&lt;')
@@ -205,15 +239,62 @@ def face_function(script='TEMP3D_default.mlx',
                       + 'type="RichString" '
                       + 'tooltip="type a boolean function that will be evaluated in order to select a subset of faces"/>\n'
 
-                      + '  </filter>\n')
+                      + '  </filter>\n')"""
     script_file.close()
     return current_layer, last_layer
 
 
 def vert_function(script='TEMP3D_default.mlx', function='(q < 0)',
                   strict_face_select=True, current_layer=None, last_layer=None):
+    """Boolean function using muparser lib to perform vertex selection over current mesh.
+
+    See help(mlx.muparser_ref) for muparser reference documentation.
+
+    It's possible to use parenthesis, per-vertex variables and boolean operator:
+        (, ), and, or, <, >, =
+    It's possible to use the following per-vertex variables in the expression:
+
+    Variables:
+        x, y, z (coordinates)
+        nx, ny, nz (normal)
+        r, g, b, a (color)
+        q (quality)
+        rad
+        vi (vertex index)
+        vtu, vtv (texture coordinates)
+        ti (texture index)
+        vsel (is the vertex selected? 1 yes, 0 no)
+        and all custom vertex attributes already defined by user.
+
+    Args:
+        function (str): a boolean function that will be evaluated in order
+            to select a subset of vertices. Example: (y > 0) and (ny > 0)
+        strict_face_select (bool): if True a face is selected if ALL its
+            vertices are selected. If False a face is selected if at least
+            one of its vertices is selected.
+
+    Returns:
+        current_layer, last_layer
+
+    """
     script_file = open(script, 'a')
-    script_file.write('  <filter name="Conditional Vertex Selection">\n'
+    script_file.write('  <filter name="Conditional Vertex Selection">\n')
+    script_file.write(' '.join([
+        '    <Param',
+        'name="condSelect"',
+        'value="%s"' % str(function).replace('<', '&lt;'),
+        'description="boolean function"',
+        'type="RichString"',
+        '/>\n']))
+    script_file.write(' '.join([
+        '    <Param',
+        'name="strictSelect"',
+        'value="%s"' % str(strict_face_select).lower(),
+        'description="Strict face selection"',
+        'type="RichBool"',
+        '/>\n']))
+    script_file.write('  </filter>\n')
+    """script_file.write('  <filter name="Conditional Vertex Selection">\n'
 
                       + '    <Param name="condSelect" '
                       + 'value="%s" ' % function.replace('<', '&lt;')
@@ -227,6 +308,6 @@ def vert_function(script='TEMP3D_default.mlx', function='(q < 0)',
                       + 'type="RichBool" '
                       + 'tooltip="If checked a face is selected if ALL its vertices are selected. If unchecked a face is selected if at least one of its vertices is selected."/>\n'
 
-                      + '  </filter>\n')
+                      + '  </filter>\n')"""
     script_file.close()
     return current_layer, last_layer

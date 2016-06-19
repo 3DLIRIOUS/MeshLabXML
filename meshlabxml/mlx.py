@@ -363,7 +363,7 @@ def begin(script='TEMP3D_default.mlx', file_in=None, mlp_in=None):
     """
     script_file = open(script, 'w')
     script_file.write(''.join(['<!DOCTYPE FilterScript>\n',
-                      '<FilterScript>\n']))
+                               '<FilterScript>\n']))
     script_file.close()
 
     current_layer = -1
@@ -423,3 +423,94 @@ def end(script='TEMP3D_default.mlx'):
     script_file = open(script, 'a')
     script_file.write('</FilterScript>')
     script_file.close()
+
+
+def muparser_ref():
+    """Reference documentation for muparser.
+
+    muparser is used by many internal MeshLab filters, specifically those
+    where you can control parameters via a mathematical expression. Examples:
+        transform.function
+        select.vert_function
+        vert_color.function
+
+    The valid variables that can be used in an expression are given in the
+    documentation for the individual functions. Generally, it's possible to use
+    the following per-vertex variables in the expression:
+
+    Variables (per vertex):
+        x, y, z (coordinates)
+        nx, ny, nz (normal)
+        r, g, b, a (color)
+        q (quality)
+        rad
+        vi (vertex index)
+        vtu, vtv (texture coordinates)
+        ti (texture index)
+        vsel (is the vertex selected? 1 yes, 0 no)
+        and all custom vertex attributes already defined by user.
+
+    Below is a list of the predefined operators and functions within muparser.
+
+    muparser homepage: http://beltoforion.de/article.php?a=muparser
+    Current version of muparser: 1.3.2 (as of MeshLab 1.3.4Beta)
+    Note that muparser was upgraded to 2.2.5 in r6672
+
+    Built-in functions:
+        Name    Argc.   Explanation
+        ----------------------------
+        sin     1       sine function
+        cos     1       cosine function
+        tan     1       tangens function
+        asin    1       arcus sine function
+        acos    1       arcus cosine function
+        atan    1       arcus tangens function
+        sinh    1       hyperbolic sine function
+        cosh    1       hyperbolic cosine
+        tanh    1       hyperbolic tangens function
+        asinh   1       hyperbolic arcus sine function
+        acosh   1       hyperbolic arcus tangens function
+        atanh   1       hyperbolic arcur tangens function
+        log2    1       logarithm to the base 2
+        log10   1       logarithm to the base 10
+        log     1       logarithm to the base 10
+        ln      1       logarithm to base e (2.71828...)
+        exp     1       e raised to the power of x
+        sqrt    1       square root of a value
+        sign    1       sign function -1 if x<0; 1 if x>0
+        rint    1       round to nearest integer
+        abs     1       absolute value
+        min     var.    min of all arguments
+        max     var.    max of all arguments
+        sum     var.    sum of all arguments
+        avg     var.    mean value of all arguments
+
+    Built-in binary operators
+        Operator    Description                Priority
+        -----------------------------------------------
+        =           assignment                 -1
+        and         logical and*                1
+        or          logical or*                 2
+        <=          less or equal               4
+        >=          greater or equal            4
+        !=          not equal                   4
+        ==          equal                       4
+        >           greater than                4
+        <           less than                   4
+        +           addition                    5
+        -           subtraction                 5
+        *           multiplication              6
+        /           division                    6
+        ^           raise x to the power of y   7
+
+    Conditional Operator
+        if(Test, Then_value, Otherwise_value)*
+
+    *: Operator will change in the future when muparser is upgraded.
+    New operators:
+        &&         logical and                 1
+        ||         logical or                  2
+        ?:         if then else operator (Test ? Then_value : Otherwise_value)
+
+    """
+    pass
