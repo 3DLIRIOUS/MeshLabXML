@@ -60,7 +60,7 @@ def measure_aabb(fbasename=None, log=None):
         log_file.write('max = %s\n' % aabb['max'])
         log_file.write('center = %s\n' % aabb['center'])
         log_file.write('size = %s\n' % aabb['size'])
-        log_file.write('diagonal = %s\n' % aabb['diagonal'])
+        log_file.write('diagonal = %s\n\n' % aabb['diagonal'])
         log_file.close()
     # print(aabb)
     return aabb

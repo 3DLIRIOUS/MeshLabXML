@@ -440,7 +440,7 @@ def annulus(script='TEMP3D_default.mlx',
 
 def cylinder_open_hires(script='TEMP3D_default.mlx', height=1.0,
                         radius=1, diameter=None,
-                        cir_segments=32, height_segments=1,
+                        cir_segments=48, height_segments=1,
                         invert_normals=False, center=False, color=None,
                         current_layer=None, last_layer=None):
     """ Creates a round open tube, e.g. a cylinder with no top or bottom.

@@ -23,6 +23,7 @@ import os
 import sys
 import subprocess
 import xml.etree.ElementTree as ET
+import math
 
 from . import util
 from . import layers
@@ -164,7 +165,6 @@ def run(log=None, ml_log=None,
                                       universal_newlines=True)
         if log is not None:
             log_file.close()
-
         if return_code == 0:
             break
         else:
@@ -514,3 +514,20 @@ def muparser_ref():
 
     """
     pass
+
+
+def mp_atan2(y, x):
+    """muparser atan2 function
+
+    Implements an atan2(y,x) function for older muparser versions (<2.1.0);
+    atan2 was added as a built-in function in muparser 2.1.0
+
+    Args:
+        y (str): y argument of the atan2(y,x) function
+        x (str): x argument of the atan2(y,x) function
+
+    Returns:
+        A muparser string that calculates atan2(y,x)
+    """
+    return 'if((x)>0, atan((y)/(x)), if(((x)<0) and ((y)>=0), atan((y)/(x))+pi, if(((x)<0) and ((y)<0), atan((y)/(x))-pi, if(((x)==0) and ((y)>0), pi/2, if(((x)==0) and ((y)<0), -pi/2, 0)))))'.replace(
+        'pi', str(math.pi)).replace('y', y).replace('x', x)

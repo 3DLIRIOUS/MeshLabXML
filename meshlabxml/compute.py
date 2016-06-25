@@ -26,7 +26,8 @@ def section(script='TEMP3D_default.mlx', axis='z', offset=0.0,
         if custom_axis is None:
             print('WARNING: a custom axis was selected, however',
                   '"custom_axis" was not provided. Using default (Z).')
-            custom_axis = [0.0, 0.0, 1.0]
+    if custom_axis is None:
+        custom_axis = [0.0, 0.0, 1.0]
     script_file = open(script, 'a')
     script_file.write('  <filter name="Compute Planar Section">\n' +
 
@@ -174,27 +175,27 @@ def parse_geometry(ml_log, log=None):
             log_file.write('volume_mm3 = %s, volume_cm3 = %s\n'
                            % (geometry['volume_mm3'], geometry['volume_cm3']))
         if 'area_mm2' in geometry:
-            log_file.write('area_mm2 = %s, area_cm2 = %s\n'
+            log_file.write(''.join(['area_mm2 = %s, area_cm2 = %s\n'
                            % (geometry['area_mm2'], geometry['area_cm2']),
                            'total_edge_length = %s\n'
                            % geometry['total_edge_length'],
                            'total_edge_length_incl_faux = %s\n'
-                           % geometry['total_edge_length_incl_faux'])
+                           % geometry['total_edge_length_incl_faux']]))
         if 'barycenter' in geometry:
             log_file.write('barycenter = %s\n' % geometry['barycenter'])
         if 'center_of_mass' in geometry:
             log_file.write('center_of_mass = %s\n'
                            % geometry['center_of_mass'])
         if 'inertia_tensor' in geometry:
-            log_file.write('inertia_tensor =\n',
+            log_file.write(''.join(['inertia_tensor =\n',
                            '  %s\n' % geometry['inertia_tensor'][0],
                            '  %s\n' % geometry['inertia_tensor'][1],
-                           '  %s\n' % geometry['inertia_tensor'][2])
+                           '  %s\n' % geometry['inertia_tensor'][2]]))
         if 'principal_axes' in geometry:
-            log_file.write('principal_axes =\n',
+            log_file.write(''.join(['principal_axes =\n',
                            '  %s\n' % geometry['principal_axes'][0],
                            '  %s\n' % geometry['principal_axes'][1],
-                           '  %s\n' % geometry['principal_axes'][2])
+                           '  %s\n' % geometry['principal_axes'][2]]))
         if 'axis_momenta' in geometry:
             log_file.write('axis_momenta = %s\n' % geometry['axis_momenta'])
         if 'total_edge_length_incl_faux' in geometry:

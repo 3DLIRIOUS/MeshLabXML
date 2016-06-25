@@ -2,8 +2,10 @@
 
 import sys
 import math
+import re
 
 from . import util
+from . import mp_atan2
 
 
 def translate2(script='TEMP3D_default.mlx', value=(0.0, 0.0, 0.0),
@@ -425,6 +427,39 @@ def function(script='TEMP3D_default.mlx', x_func='x', y_func='y', z_func='z',
 
                       '  </filter>\n')
     script_file.close()"""
+    return current_layer, last_layer
+
+
+def function_cyl_co(script='TEMP3D_default.mlx', r_func='r', theta_func='theta', z_func='z',
+                    current_layer=None, last_layer=None):
+    """Geometric function using cylindrical coordinates.
+
+    See "function" documentation for usage.
+
+    """
+    # atan2(y,x)
+    # TODO: replace with built-in muparser function when MeshLab is updated
+    #atan2 = 'if(x>0, atan(y/x), if((x<0) and (y>=0), atan(y/x)+%s, if((x<0) and (y<0), atan(y/x)-%s, if((x==0) and (y>0), %s/2, if((x==0) and (y<0), -%s/2, 0)))))' % (math.pi, math.pi, math.pi, math.pi)
+
+    r = 'sqrt(x^2+y^2)'
+    theta = mp_atan2('y', 'x')
+
+    # Use re matching to match whole word; this prevents matching
+    # 'sqrt' and 'rint' when replacing 'r'
+    r_func = re.sub(r"\br\b", r, r_func).replace('theta', theta)
+    theta_func = re.sub(r"\br\b", r, theta_func).replace('theta', theta)
+
+    x_func = '(r)*cos(theta)'.replace('r', r_func).replace('theta', theta_func)
+    y_func = '(r)*sin(theta)'.replace('r', r_func).replace('theta', theta_func)
+
+    function(script, x_func, y_func, z_func)
+    return current_layer, last_layer
+
+
+def radial_flare(script='TEMP3D_default.mlx', radius=10,
+                 current_layer=None, last_layer=None):
+    r_func = 'if(z>0, r + radius - radius*sqrt(1-z^2/radius^2), r)'.replace('radius', str(radius))
+    function_cyl_co(script, r_func)
     return current_layer, last_layer
 
 
