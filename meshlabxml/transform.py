@@ -448,6 +448,7 @@ def function_cyl_co(script='TEMP3D_default.mlx', r_func='r', theta_func='theta',
     # 'sqrt' and 'rint' when replacing 'r'
     r_func = re.sub(r"\br\b", r, r_func).replace('theta', theta)
     theta_func = re.sub(r"\br\b", r, theta_func).replace('theta', theta)
+    z_func = re.sub(r"\br\b", r, z_func).replace('theta', theta)
 
     x_func = '(r)*cos(theta)'.replace('r', r_func).replace('theta', theta_func)
     y_func = '(r)*sin(theta)'.replace('r', r_func).replace('theta', theta_func)
@@ -456,43 +457,206 @@ def function_cyl_co(script='TEMP3D_default.mlx', r_func='r', theta_func='theta',
     return current_layer, last_layer
 
 
-def radial_flare(script='TEMP3D_default.mlx', radius=10,
+def radial_flare(script='TEMP3D_default.mlx', flare_radius=10,
+                 r2=None, z2=None,
                  current_layer=None, last_layer=None):
-    r_func = 'if(z>0, r + radius - radius*sqrt(1-z^2/radius^2), r)'.replace('radius', str(radius))
+    """
+
+    r2 (num): radius of mesh at end of flare
+    """
+    # TODO: set radius limit, make it so flare continues to expand linearly after radius limit
+    # if(r<=radius_limit, flare, factor*z+constant
+    # TODO: add option to specify radius at height instead of radius
+    r_func = 'if(z>0, r + flare_radius - flare_radius*sqrt(1-z^2/flare_radius^2), r)'.replace('flare_radius', str(flare_radius))
     function_cyl_co(script, r_func)
     return current_layer, last_layer
 
 
-def wrap2cylinder(script='TEMP3D_default.mlx', radius=1,
-                  pitch=0, current_layer=None, last_layer=None):
+def wrap2cylinder(script='TEMP3D_default.mlx',
+                  radius=1, pitch=0, taper=0,
+                  pitch_func=None, taper_func=None,
+                  current_layer=None, last_layer=None):
     """Deform mesh around cylinder of radius and axis z
 
     y = 0 will be on the surface of radius "radius"
     pitch != 0 will create a helix, with distance "pitch" traveled in z for each rotation
+    taper = change in r over z. E.g. a value of 0.5 will shrink r by 0.5 for every z length of 1
 
     """
-    """function(s=s, x='(%s+y)*sin(x/(%s+y))' % (radius, radius),
+    """function(s=s, x='(%s+y-taper)*sin(x/(%s+y))' % (radius, radius),
                      y='(%s+y)*cos(x/(%s+y))' % (radius, radius),
                      z='z-%s*x/(2*%s*(%s+y))' % (pitch, pi, radius))"""
-    function(script,
-             x_func='(%s+y)*sin(x/%s)' % (radius, radius),
-             y_func='(%s+y)*cos(x/%s)' % (radius, radius),
-             z_func='z-%s*x/(2*%s*%s)' % (pitch, math.pi, radius))
+    if pitch_func is None:
+        pitch_func = '-(pitch)*x/(2*pi*(radius))'
+    pitch_func = pitch_func.replace(
+        'pitch', str(pitch)).replace(
+        'pi', str(math.pi)).replace(
+        'radius', str(radius))
+    if taper_func is None:
+        taper_func = '-(taper)*(pitch_func)'
+    taper_func = taper_func.replace(
+        'taper', str(taper)).replace(
+        'pitch_func', str(pitch_func)).replace(
+        'pi', str(math.pi))
+
+    x_func = '(y+(radius)+(taper_func))*sin(x/(radius))'.replace(
+        'radius', str(radius)).replace('taper_func', str(taper_func))
+    y_func = '(y+(radius)+(taper_func))*cos(x/(radius))'.replace(
+        'radius', str(radius)).replace('taper_func', str(taper_func))
+    z_func = 'z+(pitch_func)'.replace('pitch_func', str(pitch_func))
+
+    function(script, x_func, y_func, z_func)
     return current_layer, last_layer
 
 
-def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, angle=0,
-         straight_ends=False, current_layer=None, last_layer=None):
+def wrap2sphere(script='TEMP3D_default.mlx', radius=1,
+                current_layer=None, last_layer=None):
+    """
+    """
+    #r = 'sqrt(x^2+y^2)'
+
+    r_func = '(z+radius)*sin(r/radius)'.replace('radius', str(radius))
+    z_func = '(z+radius)*cos(r/radius)'.replace('radius', str(radius))
+
+    #z_func='if(r<radius, sqrt(radius-r^2)-radius+z'.replace('radius', str(radius))
+    #z_func='sqrt(radius-x^2-y^2)-radius+z'.replace('radius', str(radius))
+    # z_func='sqrt(%s-x^2-y^2)-%s+z' % (sphere_radius**2, sphere_radius))
+    function_cyl_co(script=script, r_func=r_func, z_func=z_func)
+    return current_layer, last_layer
+
+
+def emboss_sphere(script='TEMP3D_default.mlx', radius=1, radius_limit=None, angle=None,
+                  current_layer=None, last_layer=None):
+    """
+
+    angle overrides radius_limit
+    """
+    if angle is not None:
+        radius_limit = radius * math.sin(math.radians(angle / 2))
+    if (radius_limit is None) or (radius_limit > radius):
+        radius_limit = radius
+    r = 'sqrt(x^2+y^2)'
+
+    #r_func = '(z+radius)*sin(r/radius)'.replace('radius', str(radius))
+    #z_func = '(z+radius)*cos(r/radius)'.replace('radius', str(radius))
+
+    z_func = 'if((r<=radius_limit), sqrt(radius^2-r^2)+z-sqrt(radius^2-radius_limit^2), z)'
+    #z_func='if((r<=radius), if((r<=radius_limit), sqrt(radius^2-r^2)+z-sqrt(radius^2-radius_limit^2), z), z)'
+    #z_func='if((r<=radius) and (r<=radius_limit), sqrt(radius^2-r^2)+z-sqrt(radius^2-radius_limit^2), z)'
+    z_func = re.sub(r"\br\b", r, z_func).replace(
+        'radius_limit', str(radius_limit)).replace('radius', str(radius))
+
+    #z_func='sqrt(radius-x^2-y^2)-radius+z'.replace('radius', str(radius))
+    # z_func='sqrt(%s-x^2-y^2)-%s+z' % (sphere_radius**2, sphere_radius))
+    function(script=script, z_func=z_func)
+    return current_layer, last_layer
+
+
+def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, taper=0, angle=0,
+         straght_start=True, straght_end=False, radius_limit=None, outside_limit_end=True,
+         current_layer=None, last_layer=None):
     """Bends mesh around cylinder of radius radius and axis z to a certain angle
 
     straight_ends: Only apply twist (pitch) over the area that is bent
+
+    outside_limit_end (bool): should values outside of the bend radius_limit be considered part
+        of the end (True) or the start (False)?
     """
-    angle = math.radians(angle / 2)
+    if radius_limit is None:
+        radius_limit = 2 * radius
+    # TODO: add limit so bend only applies over y<2*radius; add option to set
+    # larger limit
+    angle = math.radians(angle)
     segment = radius * angle
     """function(s=s, x='if(x<%s and x>-%s, (%s+y)*sin(x/%s), (%s+y)*sin(%s/%s)+(x-%s)*cos(%s/%s))'
                         % (segment, segment,  radius, radius,  radius, segment, radius, segment, segment, radius),
                      y='if(x<%s*%s/2 and x>-%s*%s/2, (%s+y)*cos(x/%s), (%s+y)*cos(%s)-(x-%s*%s)*sin(%s))'
                         % (radius, angle, radius, angle, radius, radius, radius, angle/2, radius, angle/2, angle/2),"""
+    pitch_func = '-(pitch)*x/(2*pi*(radius))'.replace(
+        'pitch', str(pitch)).replace(
+        'pi', str(math.pi)).replace(
+        'radius', str(radius))
+    taper_func = '(taper)*(pitch_func)'.replace(
+        'taper', str(taper)).replace(
+        'pitch_func', str(pitch_func)).replace(
+        'pi', str(math.pi))
+    # y<radius_limit
+
+    if outside_limit_end:
+        x_func = 'if(x<segment and y<radius_limit, if(x>0, (y+(radius)+(taper_func))*sin(x/(radius)), x), (y+radius+(taper_func))*sin(angle)+(x-segment)*cos(angle))'
+    else:
+        x_func = 'if(x<segment, if(x>0 and y<radius_limit, (y+(radius)+(taper_func))*sin(x/(radius)), x), if(y<radius_limit, (y+radius+(taper_func))*sin(angle)+(x-segment)*cos(angle), x))'
+
+    x_func = x_func.replace(
+        # x_func = 'if(x<segment, if(x>0, (y+radius)*sin(x/radius), x),
+        # (y+radius)*sin(angle)-segment)'.replace(
+        'segment', str(segment)).replace(
+        'radius_limit', str(radius_limit)).replace(
+        'radius', str(radius)).replace(
+        'taper_func', str(taper_func)).replace(
+        'angle', str(angle))
+
+    if outside_limit_end:
+        y_func = 'if(x<segment and y<radius_limit, if(x>0, (y+(radius)+(taper_func))*cos(x/(radius))-radius, y), (y+radius+(taper_func))*cos(angle)-(x-segment)*sin(angle)-radius )'
+    else:
+        y_func = 'if(x<segment, if(x>0 and y<radius_limit, (y+(radius)+(taper_func))*cos(x/(radius))-radius, y), if(y<radius_limit, (y+radius+(taper_func))*cos(angle)-(x-segment)*sin(angle)-radius, y))'
+
+    y_func = y_func.replace(
+        'segment', str(segment)).replace(
+        'radius_limit', str(radius_limit)).replace(
+        'radius', str(radius)).replace(
+        'taper_func', str(taper_func)).replace(
+        'angle', str(angle))
+
+    if straght_start:
+        start = 'z'
+    else:
+        start = 'z+(pitch_func)'
+    if straght_end:
+        end = 'z-pitch*angle/(2*pi)'
+    else:
+        end = 'z+(pitch_func)'
+
+    if outside_limit_end:
+        z_func = 'if(x<segment and y<radius_limit, if(x>0, z+(pitch_func), start), end)'
+    else:
+        z_func = 'if(x<segment, if(x>0 and y<radius_limit, z+(pitch_func), start), if(y<radius_limit, end, z))'
+    z_func = z_func.replace(
+        'start', str(start)).replace(
+        'end', str(end)).replace(
+        'segment', str(segment)).replace(
+        'radius_limit', str(radius_limit)).replace(
+        'radius', str(radius)).replace(
+        'angle', str(angle)).replace(
+        'pitch_func', str(pitch_func)).replace(
+        'pitch', str(pitch)).replace(
+        'pi', str(math.pi))
+
+    """
+    if straight_ends:
+        z_func = 'if(x<segment, if(x>0, z+(pitch_func), z), z-pitch*angle/(2*pi))'.replace(
+            'segment', str(segment)).replace(
+            'radius', str(radius)).replace(
+            'angle', str(angle)).replace(
+            'pitch_func', str(pitch_func)).replace(
+            'pitch', str(pitch)).replace(
+            'pi', str(math.pi))
+    else:
+        #z_func = 'if(x<segment, z+(pitch_func), z-(taper)*(pitch)*(x)/(2*pi*(radius)))'.replace(
+        #z_func = 'if(x<segment, z+(pitch_func), z+(pitch_func))'.replace(
+        #bestz_func = 'if(x<segment, z+(pitch_func), z+(pitch_func)+(-(taper)*(pitch)*(x-segment)/(2*pi*(radius))))'.replace(
+        #z_func = 'if(x<segment, z+(pitch_func), z+(pitch_func)+(-(taper)*(pitch)*x/(2*pi*(radius))))'.replace(
+        #z_func = 'if(x<segment, z+(pitch_func), z+(pitch_func)+((taper)*pitch*angle/(2*pi)))'.replace(
+        z_func = 'z+(pitch_func)'.replace(
+            'radius', str(radius)).replace(
+            'segment', str(segment)).replace(
+            'angle', str(angle)).replace(
+            'taper', str(taper)).replace(
+            'pitch_func', str(pitch_func)).replace(
+            'pitch', str(pitch)).replace(
+            'pi', str(math.pi))
+    """
+    """
     x_func = 'if(x<%s, if(x>-%s, (%s+y)*sin(x/%s), (%s+y)*sin(-%s)+(x+%s)*cos(-%s)), (%s+y)*sin(%s)+(x-%s)*cos(%s))' % (
         segment, segment, radius, radius, radius, angle, segment, angle, radius, angle, segment, angle)
     y_func = 'if(x<%s, if(x>-%s, (%s+y)*cos(x/%s), (%s+y)*cos(-%s)-(x+%s)*sin(-%s)), (%s+y)*cos(%s)-(x-%s)*sin(%s))' % (
@@ -502,8 +666,10 @@ def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, angle=0,
             segment, segment, pitch, math.pi, radius, pitch, angle, math.pi, pitch, angle, math.pi)
     else:
         z_func = 'z-%s*x/(2*%s*%s)' % (pitch, math.pi, radius)
+    """
     function(script, x_func=x_func, y_func=y_func, z_func=z_func)
     return current_layer, last_layer
+
 
 # TODO: add function to round mesh to desired tolerance
 # use muparser rint (round to nearest integer)

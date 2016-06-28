@@ -598,6 +598,14 @@ def cube_hires(script='TEMP3D_default.mlx', size=1.0,
 
     Warnings: function uses layers.join
 
+    top_option
+        0 open
+        1 full
+        2 simple
+    bottom_option
+        0 open
+        1 full
+        2 simple
     """
     """# Convert size to list if it isn't already
     if not isinstance(size, list):
