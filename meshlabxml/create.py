@@ -661,7 +661,7 @@ def cube_hires(script='TEMP3D_default.mlx', size=1.0,
 def annulus_hires(script='TEMP3D_default.mlx',
                   radius=None, radius1=None, radius2=None,
                   diameter=None, diameter1=None, diameter2=None,
-                  cir_segments=32, rad_segments=1, color=None,
+                  cir_segments=48, rad_segments=1, color=None,
                   current_layer=None, last_layer=None):
     """Create a cylinder with user defined number of segments
 

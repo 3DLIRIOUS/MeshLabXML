@@ -74,9 +74,9 @@ def translate(script='TEMP3D_default.mlx', value=(0.0, 0.0, 0.0),
     if not isinstance(value, list):
         value = list(value)
     function(script,
-             x_func='x+%s' % value[0],
-             y_func='y+%s' % value[1],
-             z_func='z+%s' % value[2])
+             x_func='x+(%s)' % value[0],
+             y_func='y+(%s)' % value[1],
+             z_func='z+(%s)' % value[2])
     return current_layer, last_layer
 
 
@@ -328,9 +328,9 @@ def scale(script='TEMP3D_default.mlx', value=1.0,
         value = [value[0], value[0], value[0]]"""
     value = util.make_list(value, 3)
     function(script,
-             x_func='x*%s' % value[0],
-             y_func='y*%s' % value[1],
-             z_func='z*%s' % value[2])
+             x_func='x*(%s)' % value[0],
+             y_func='y*(%s)' % value[1],
+             z_func='z*(%s)' % value[2])
     return current_layer, last_layer
 
 
@@ -457,20 +457,93 @@ def function_cyl_co(script='TEMP3D_default.mlx', r_func='r', theta_func='theta',
     return current_layer, last_layer
 
 
-def radial_flare(script='TEMP3D_default.mlx', flare_radius=10,
-                 r2=None, z2=None,
-                 current_layer=None, last_layer=None):
+def radial_flare2(script='TEMP3D_default.mlx', flare_radius=None,
+                  start_radius=None, end_radius=None, end_height=None,
+                  current_layer=None, last_layer=None):
     """
-
-    r2 (num): radius of mesh at end of flare
+    flare_radius must be >= end_height (height)
+    end_radius max = flare_radius + r
+    
+    end_radius (num): radius of mesh at end of flare
+    
+    +15 r= 8.8205
+    -15 r= 1.1795
+    
+    z=10, 5 +/-15 - +/-15*0.74535599249992989880305788957709
     """
     # TODO: set radius limit, make it so flare continues to expand linearly after radius limit
     # if(r<=radius_limit, flare, factor*z+constant
     # TODO: add option to specify radius at height instead of radius
-    r_func = 'if(z>0, r + flare_radius - flare_radius*sqrt(1-z^2/flare_radius^2), r)'.replace('flare_radius', str(flare_radius))
+    if (end_radius is not None) and (end_height is not None):
+        # this is only correct if r is constant
+        # start_radius here is really r at end_height
+        #flare_radius = '-((start_radius-end_radius)^2 + end_height^2)/(2*(start_radius-end_radius))'
+        if (end_radius - start_radius) < end_height:
+            flare_radius = -((start_radius-end_radius)**2 + end_height**2)/(2*(start_radius-end_radius))
+            #print('flare_radius = %s' % flare_radius)
+        else:
+            print('Error, end_radius is too large for end_height; angle is > 90d')
+
+    r_func = 'if(z>0, (r) + (flare_radius) - (flare_radius)*sqrt(1-z^2/(flare_radius)^2), (r))'.replace('flare_radius', str(flare_radius))
+    #r_func = 'if(z>0, (r) + (flare_radius) - (flare_radius)*sqrt(1-z^2/(flare_radius)^2), (r))'.replace('flare_radius', str(flare_radius)).replace('start_radius', str(start_radius)).replace('end_radius', str(end_radius)).replace('end_height', str(end_height))
     function_cyl_co(script, r_func)
     return current_layer, last_layer
 
+def radial_flare(script='TEMP3D_default.mlx', flare_radius=None,
+                 start_radius=None, end_radius=None, end_height=None,
+                 current_layer=None, last_layer=None):
+    """
+    flare_radius must be >= z2 (height)
+    r2 max = flare_radius + r
+    
+    r2 (num): radius of mesh at end of flare
+    
+    +15 r= 8.8205
+    -15 r= 1.1795
+    
+    z=10, 5 +/-15 - +/-15*0.74535599249992989880305788957709
+    """
+    # TODO: set radius limit, make it so flare continues to expand linearly after radius limit
+    # if(r<=radius_limit, flare, factor*z+constant
+    # TODO: add option to specify radius at height instead of radius
+    effective_radius = '(flare_radius) + (start_radius) - (r)'
+    
+    r_func = 'if(z>0, (flare_radius) + (start_radius) - (effective_radius)*cos(z/(flare_radius)), (r))'
+    z_func = 'if(z>0, (effective_radius)*sin(z/(flare_radius)), z)'
+    
+    r_func = r_func.replace('effective_radius', str(effective_radius)).replace('start_radius', str(start_radius)).replace('flare_radius', str(flare_radius))
+    z_func = z_func.replace('effective_radius', str(effective_radius)).replace('start_radius', str(start_radius)).replace('flare_radius', str(flare_radius))
+    
+    function_cyl_co(script=script, r_func=r_func, z_func=z_func)
+    return current_layer, last_layer
+
+def curl_rim(script='TEMP3D_default.mlx', curl_radius=None,
+                 start_radius=None, end_radius=None, end_height=None,
+                 current_layer=None, last_layer=None):
+    """
+    flare_radius must be >= z2 (height)
+    r2 max = flare_radius + r
+    
+    r2 (num): radius of mesh at end of flare
+    
+    +15 r= 8.8205
+    -15 r= 1.1795
+    
+    z=10, 5 +/-15 - +/-15*0.74535599249992989880305788957709
+    """
+    # TODO: set radius limit, make it so flare continues to expand linearly after radius limit
+    # if(r<=radius_limit, flare, factor*z+constant
+    # TODO: add option to specify radius at height instead of radius
+    effective_radius = '(curl_radius) - z'
+    
+    r_func = 'if((r)>(start_radius), (start_radius) + (effective_radius)*sin(((r)-(start_radius))/(curl_radius)), (r))'
+    z_func = 'if((r)>(start_radius), (curl_radius) - (effective_radius)*cos(((r)-(start_radius))/(curl_radius)), z)'
+    
+    r_func = r_func.replace('effective_radius', str(effective_radius)).replace('start_radius', str(start_radius)).replace('curl_radius', str(curl_radius))
+    z_func = z_func.replace('effective_radius', str(effective_radius)).replace('start_radius', str(start_radius)).replace('curl_radius', str(curl_radius))
+    
+    function_cyl_co(script=script, r_func=r_func, z_func=z_func)
+    return current_layer, last_layer
 
 def wrap2cylinder(script='TEMP3D_default.mlx',
                   radius=1, pitch=0, taper=0,
@@ -515,8 +588,8 @@ def wrap2sphere(script='TEMP3D_default.mlx', radius=1,
     """
     #r = 'sqrt(x^2+y^2)'
 
-    r_func = '(z+radius)*sin(r/radius)'.replace('radius', str(radius))
-    z_func = '(z+radius)*cos(r/radius)'.replace('radius', str(radius))
+    r_func = '(z+(radius))*sin((r)/(radius))'.replace('radius', str(radius))
+    z_func = '(z+(radius))*cos((r)/(radius))'.replace('radius', str(radius))
 
     #z_func='if(r<radius, sqrt(radius-r^2)-radius+z'.replace('radius', str(radius))
     #z_func='sqrt(radius-x^2-y^2)-radius+z'.replace('radius', str(radius))
@@ -540,7 +613,7 @@ def emboss_sphere(script='TEMP3D_default.mlx', radius=1, radius_limit=None, angl
     #r_func = '(z+radius)*sin(r/radius)'.replace('radius', str(radius))
     #z_func = '(z+radius)*cos(r/radius)'.replace('radius', str(radius))
 
-    z_func = 'if((r<=radius_limit), sqrt(radius^2-r^2)+z-sqrt(radius^2-radius_limit^2), z)'
+    z_func = 'if((r)<=(radius_limit), sqrt((radius)^2-(r)^2)+z-sqrt((radius)^2-(radius_limit)^2), z)'
     #z_func='if((r<=radius), if((r<=radius_limit), sqrt(radius^2-r^2)+z-sqrt(radius^2-radius_limit^2), z), z)'
     #z_func='if((r<=radius) and (r<=radius_limit), sqrt(radius^2-r^2)+z-sqrt(radius^2-radius_limit^2), z)'
     z_func = re.sub(r"\br\b", r, z_func).replace(
@@ -583,9 +656,9 @@ def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, taper=0, angle=0,
     # y<radius_limit
 
     if outside_limit_end:
-        x_func = 'if(x<segment and y<radius_limit, if(x>0, (y+(radius)+(taper_func))*sin(x/(radius)), x), (y+radius+(taper_func))*sin(angle)+(x-segment)*cos(angle))'
+        x_func = 'if(x<(segment) and y<(radius_limit), if(x>0, (y+(radius)+(taper_func))*sin(x/(radius)), x), (y+(radius)+(taper_func))*sin(angle)+(x-(segment))*cos(angle))'
     else:
-        x_func = 'if(x<segment, if(x>0 and y<radius_limit, (y+(radius)+(taper_func))*sin(x/(radius)), x), if(y<radius_limit, (y+radius+(taper_func))*sin(angle)+(x-segment)*cos(angle), x))'
+        x_func = 'if(x<(segment), if(x>0 and y<(radius_limit), (y+(radius)+(taper_func))*sin(x/(radius)), x), if(y<(radius_limit), (y+(radius)+(taper_func))*sin(angle)+(x-(segment))*cos(angle), x))'
 
     x_func = x_func.replace(
         # x_func = 'if(x<segment, if(x>0, (y+radius)*sin(x/radius), x),
@@ -597,9 +670,9 @@ def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, taper=0, angle=0,
         'angle', str(angle))
 
     if outside_limit_end:
-        y_func = 'if(x<segment and y<radius_limit, if(x>0, (y+(radius)+(taper_func))*cos(x/(radius))-radius, y), (y+radius+(taper_func))*cos(angle)-(x-segment)*sin(angle)-radius )'
+        y_func = 'if(x<(segment) and y<(radius_limit), if(x>0, (y+(radius)+(taper_func))*cos(x/(radius))-(radius), y), (y+(radius)+(taper_func))*cos(angle)-(x-(segment))*sin(angle)-(radius))'
     else:
-        y_func = 'if(x<segment, if(x>0 and y<radius_limit, (y+(radius)+(taper_func))*cos(x/(radius))-radius, y), if(y<radius_limit, (y+radius+(taper_func))*cos(angle)-(x-segment)*sin(angle)-radius, y))'
+        y_func = 'if(x<(segment), if(x>0 and y<(radius_limit), (y+(radius)+(taper_func))*cos(x/(radius))-(radius), y), if(y<(radius_limit), (y+(radius)+(taper_func))*cos(angle)-(x-(segment))*sin(angle)-(radius), y))'
 
     y_func = y_func.replace(
         'segment', str(segment)).replace(
@@ -613,14 +686,14 @@ def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, taper=0, angle=0,
     else:
         start = 'z+(pitch_func)'
     if straght_end:
-        end = 'z-pitch*angle/(2*pi)'
+        end = 'z-(pitch)*(angle)/(2*pi)'
     else:
         end = 'z+(pitch_func)'
 
     if outside_limit_end:
-        z_func = 'if(x<segment and y<radius_limit, if(x>0, z+(pitch_func), start), end)'
+        z_func = 'if(x<(segment) and y<(radius_limit), if(x>0, z+(pitch_func), (start)), (end))'
     else:
-        z_func = 'if(x<segment, if(x>0 and y<radius_limit, z+(pitch_func), start), if(y<radius_limit, end, z))'
+        z_func = 'if(x<(segment), if(x>0 and y<(radius_limit), z+(pitch_func), (start)), if(y<(radius_limit), (end), z))'
     z_func = z_func.replace(
         'start', str(start)).replace(
         'end', str(end)).replace(
