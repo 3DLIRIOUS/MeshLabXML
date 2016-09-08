@@ -35,23 +35,6 @@ def deselect(script='TEMP3D_default.mlx', face=True,
         'tooltip="If true the filter will de-select all the vertices."',
         '/>\n']))
     script_file.write('  </filter>\n')
-    """script_file.write('  <filter name="Select None">\n' +
-
-             '    <Param name="allFaces" ' +
-             'value="%s" ' % str(all_F).lower() +
-             'description="De-select all Faces" ' +
-             'type="RichBool" ' +
-             'tooltip="If true the filter will de-select all the' +
-             ' faces."/>\n' +
-
-             '    <Param name="allVerts" ' +
-             'value="%s" ' % str(all_V).lower() +
-             'description="De-select all Vertices" ' +
-             'type="RichBool" ' +
-             'tooltip="If true the filter will de-select all the' +
-             ' vertices."/>\n' +
-
-             '  </filter>\n')"""
     script_file.close()
     return current_layer, last_layer
 
@@ -231,15 +214,6 @@ def face_function(script='TEMP3D_default.mlx',
         'type="RichString"',
         '/>\n']))
     script_file.write('  </filter>\n')
-    """script_file.write('  <filter name="Conditional Face Selection">\n'
-
-                      + '    <Param name="condSelect" '
-                      + 'value="%s" ' % function.replace('<', '&lt;')
-                      + 'description="boolean function" '
-                      + 'type="RichString" '
-                      + 'tooltip="type a boolean function that will be evaluated in order to select a subset of faces"/>\n'
-
-                      + '  </filter>\n')"""
     script_file.close()
     return current_layer, last_layer
 
@@ -294,20 +268,29 @@ def vert_function(script='TEMP3D_default.mlx', function='(q < 0)',
         'type="RichBool"',
         '/>\n']))
     script_file.write('  </filter>\n')
-    """script_file.write('  <filter name="Conditional Vertex Selection">\n'
-
-                      + '    <Param name="condSelect" '
-                      + 'value="%s" ' % function.replace('<', '&lt;')
-                      + 'description="boolean function" '
-                      + 'type="RichString" '
-                      + 'tooltip="type a boolean function that will be evaluated in order to select a subset of vertices. Example: (y > 0) and (ny > 0)"/>\n'
-
-                      + '    <Param name="strictSelect" '
-                      + 'value="%s" ' % str(strict_face_select).lower()
-                      + 'description="Strict face selection" '
-                      + 'type="RichBool" '
-                      + 'tooltip="If checked a face is selected if ALL its vertices are selected. If unchecked a face is selected if at least one of its vertices is selected."/>\n'
-
-                      + '  </filter>\n')"""
     script_file.close()
+    return current_layer, last_layer
+
+
+def spherical(script='TEMP3D_default.mlx',
+              radius=1.0, center_pt=(0.0, 0.0, 0.0),
+              strict_face_select=True,
+              current_layer=None, last_layer=None):
+    """Select all verties within a spherical radius
+
+    Args:
+        radius (float): radius of the sphere
+        center_pt (tuple or list): center point of the sphere
+
+    Returns:
+        current_layer, last_layer
+
+    """
+    if not isinstance(center_pt, list):
+        center_pt = list(center_pt)
+
+    function = 'sqrt((x-%s)^2+(y-%s)^2+(z-%s)^2)<=%s' % (
+        center_pt[0], center_pt[1], center_pt[2], radius)
+    vert_function(script, function=function,
+                  strict_face_select=strict_face_select)
     return current_layer, last_layer
