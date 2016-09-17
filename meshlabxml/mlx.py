@@ -149,7 +149,7 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
                         'models', 'bunny_flat(1Z).ply')
                 elif val == 'bunny_raw':
                     cmd += ' -i %s' % os.path.join(THIS_MODULEPATH, os.pardir,
-                        'models', 'bunny_raw_bin(-1250Y).ply')
+                        'models', 'bunny_raw(-1250Y).ply')
                 else:
                     cmd += ' -i %s' % val
         if file_out is not None:
