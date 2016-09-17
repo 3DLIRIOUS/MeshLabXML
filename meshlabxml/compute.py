@@ -156,6 +156,14 @@ def parse_geometry(ml_log, log=None):
                 geometry['axis_momenta'] = [
                     util.to_float(val) for val in geometry['axis_momenta']]
                 break  # stop after we find the first match
+    for key, value in geometry.items():
+        if log is None:
+            print('%s = %s' % (key, value))
+        else:
+            log_file = open(log, 'a')
+            log_file.write('%s = %s\n'  % (key, value))
+            log_file.close()
+    """
     if log is None:
         print('volume_mm3 =', geometry['volume_mm3'],
               'volume_cm3 =', geometry['volume_cm3'])
@@ -204,7 +212,7 @@ def parse_geometry(ml_log, log=None):
         if 'total_edge_length' in geometry:
             log_file.write('total_edge_length = %s\n\n'
                            % geometry['total_edge_length'])
-        log_file.close()
+        log_file.close()"""
     return geometry
 
 
@@ -249,18 +257,34 @@ def parse_topology(ml_log, log=None):
                     topology['hole_num'] = 'undefined'
                 else:
                     topology['hole_num'] = int(topology['hole_num'])
-    if log is None:
-        print('\nvert_num = %d, ' % topology['vert_num'],
-              'edge_num = %d, ' % topology['edge_num'],
-              'face_num = %d' % topology['face_num'])
-        print('part_num = %d\n' % topology['part_num'])
-        print('manifold (two-manifold) = %s\n' % topology['manifold'])
-        print('hole_num = %d\n' % topology['hole_num'])
-        print('boundry_edge_num = %d\n' % topology['boundry_edge_num'])
-        print('unref_vert_num = %d\n' % topology['unref_vert_num'])
-        print('non_manifold_vert = %d\n' % topology['non_manifold_vert'])
-        print('non_manifold_edge = %d\n' % topology['non_manifold_edge'])
-        print('genus = %d\n' % topology['genus'])
+    for key, value in topology.items():
+        if log is None:
+            print('%s = %s' % (key, value))
+        else:
+            log_file = open(log, 'a')
+            log_file.write('%s = %s\n'  % (key, value))
+            log_file.close()
+    """
+        if 'vert_num' in topology:
+            print('\nvert_num = %d, ' % topology['vert_num'],
+                  'edge_num = %d, ' % topology['edge_num'],
+                  'face_num = %d' % topology['face_num'])
+        if 'part_num' in topology:
+            print('part_num = %d\n' % topology['part_num'])
+        if 'manifold' in topology:
+            print('manifold (two-manifold) = %s\n' % topology['manifold'])
+        if 'hole_num' in topology:
+            print('hole_num = %d\n' % topology['hole_num'])
+        if 'boundry_edge_num' in topology:
+            print('boundry_edge_num = %d\n' % topology['boundry_edge_num'])
+        if 'unref_vert_num' in topology:
+            print('unref_vert_num = %d\n' % topology['unref_vert_num'])
+        if 'non_manifold_vert' in topology:
+            print('non_manifold_vert = %d\n' % topology['non_manifold_vert'])
+        if 'non_manifold_edge' in topology:
+            print('non_manifold_edge = %d\n' % topology['non_manifold_edge'])
+        if 'genus' in topology:
+            print('genus = %d\n' % topology['genus'])
     else:
         log_file = open(log, 'a')
         if 'vert_num' in topology:
@@ -288,4 +312,6 @@ def parse_topology(ml_log, log=None):
                            % topology['non_manifold_edge'])
         if 'genus' in topology:
             log_file.write('genus = %d\n' % topology['genus'])
+        log_file.close()
+    """
     return topology

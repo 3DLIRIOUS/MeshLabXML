@@ -104,7 +104,7 @@ def main():
     # by 45 degrees and scale it to stretch it out per the calculations above,
     # then translate it into place (including moving it up in z slightly so
     # that it doesn't overlap the shield front).
-    mlx.create.plane(
+    mlx.create.grid(
         size=math.sqrt(2),
         x_segments=10,
         y_segments=10,

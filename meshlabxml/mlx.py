@@ -21,6 +21,7 @@ License:
 
 import os
 import sys
+import inspect
 import subprocess
 import xml.etree.ElementTree as ET
 import math
@@ -34,6 +35,11 @@ ML_VERSION = '1.3.4Beta'
 
 Currently only affects output mask flag
 """
+
+THIS_MODULEPATH = os.path.dirname(
+    os.path.realpath(
+        inspect.getsourcefile(
+            lambda: 0)))
 
 """
 Notes on meshlabserver filters - tested with 1.34Beta:
@@ -55,10 +61,9 @@ Notes on meshlabserver filters - tested with 1.34Beta:
 """
 
 
-def run(log=None, ml_log=None,
-        mlp_in=None, mlp_out=None, overwrite=False,
-        file_in=None, file_out=None, output_mask=None,
-        script='TEMP3D_default.mlx', cmd=None):
+def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
+        mlp_in=None, mlp_out=None, overwrite=False, file_in=None,
+        file_out=None, output_mask=None, cmd=None):
     """Run meshlabserver in a subprocess.
 
     Args:
@@ -109,6 +114,12 @@ def run(log=None, ml_log=None,
     Returns:
         return code of meshlabserver process; 0 if successful
     """
+    print_meshlabserver_output = False
+    """
+    Pass meshlabserver's output to stdout; useful for debugging.
+    Only used if log is None.
+    """
+
     if cmd is None:
         cmd = 'meshlabserver '
         if ml_log is not None:
@@ -124,13 +135,23 @@ def run(log=None, ml_log=None,
             if overwrite:
                 cmd += ' -v'
         if (mlp_in is None) and (file_in is None):
+			# If no input files are provided use the default created by begin().
+			# This works around the fact that meshlabserver will
+			# not run without an input file.
             file_in = ['TEMP3D.xyz']
         if file_in is not None:
             # make a list if it isn't already
             if not isinstance(file_in, list):
                 file_in = [file_in]
             for val in file_in:
-                cmd += ' -i %s' % val
+                if val == 'bunny':
+                    cmd += ' -i %s' % os.path.join(THIS_MODULEPATH, os.pardir,
+                        'models', 'bunny_flat(1Z).ply')
+                elif val == 'bunny_raw':
+                    cmd += ' -i %s' % os.path.join(THIS_MODULEPATH, os.pardir,
+                        'models', 'bunny_raw_bin(-1250Y).ply')
+                else:
+                    cmd += ' -i %s' % val
         if file_out is not None:
             # make a list if it isn't already
             if not isinstance(file_out, list):
@@ -155,9 +176,12 @@ def run(log=None, ml_log=None,
         log_file.close()
         log_file = open(log, 'a')
     else:
-        log_file = None
-        print('meshlabserver cmd = %s' % cmd)
-        print('***START OF MESHLAB STDOUT & STDERR***')
+        if print_meshlabserver_output:
+            log_file = None
+            print('meshlabserver cmd = %s' % cmd)
+            print('***START OF MESHLAB STDOUT & STDERR***')
+        else:
+            log_file = subprocess.DEVNULL
     while True:
         # TODO: test if shell=True is really needed
         return_code = subprocess.call(cmd, shell=True,
@@ -168,11 +192,12 @@ def run(log=None, ml_log=None,
         if return_code == 0:
             break
         else:
-            print('Houston, we have a problem.')
-            print('MeshLab did not finish sucessfully. Review the log',
-                  'file and the input file(s) to see what went wrong.')
-            print('MeshLab command: "%s"' % cmd)
-            print('log: "%s"' % log)
+            # TODO: create an error handling function from the below
+            print('Houston, we have a problem.\n',
+                  'MeshLab did not finish sucessfully. Review the log',
+                  'file and the input file(s) to see what went wrong.\n',
+                  'MeshLab command: "%s"\n' % cmd,
+                  'log: "%s"\n' % log)
             print('Where do we go from here?')
             print(' r  - retry running meshlabserver (probably after',
                   'you\'ve fixed any problems with the input files)')
@@ -409,7 +434,9 @@ def begin(script='TEMP3D_default.mlx', file_in=None, mlp_in=None):
         layers.change(script, last_layer)  # Change back to the last layer
     elif last_layer == -1:
         # If no input files are provided, create a dummy file
-        # with a single vertex and delete it first in the script
+        # with a single vertex and delete it first in the script.
+        # This works around the fact that meshlabserver will
+        # not run without an input file.
         file_in = ['TEMP3D.xyz']
         file_in_descriptor = open(file_in[0], 'w')
         file_in_descriptor.write('0 0 0')

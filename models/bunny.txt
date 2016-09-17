@@ -1,0 +1,57 @@
+               Stanford Bunny
+
+The Stanford Bunny model is courtesy of the Stanford University Computer 
+Graphics Laboratory, and is included with MeshLabXML with permission. The 
+original file can be found at http://graphics.stanford.edu/data/3Dscanrep/ 
+with additional information on the model's venerable history at 
+http://www.cc.gatech.edu/~turk/bunny/bunny.html .
+
+Terms of use (retrieved from the first link above):
+    Please be sure to acknowledge the source of the data and models you take 
+    from this repository. In each of the listings below, we have cited the 
+    source of the range data and reconstructed models. You are welcome to use 
+    the data and models for research purposes. You are also welcome to mirror 
+    or redistribute them for free. Finally, you may publish images made using 
+    these models, or the images on this web site, in a scholarly article or 
+    book - as long as credit is given to the Stanford Computer Graphics 
+    Laboratory. However, such models or images are not to be used for 
+    commercial purposes, nor should they appear in a product for sale (with 
+    the exception of scholarly journals or books), without our permission.
+
+    Source: Stanford University Computer Graphics Laboratory
+    Scanner: Cyberware 3030 MS
+    Number of scans: 10
+    Total size of scans: 362,272 points (about 725,000 triangles)
+    Reconstruction: zipper
+    Size of reconstruction: 35947 vertices, 69451 triangles
+    Comments: contains 5 holes in the bottom
+
+Files:
+The following files are included with MeshLabXML. Note that the values in the 
+parentheses in the filenames indicate metadata about the model, specifically 
+scale factor (with negative values indicating an inverse scale factor) and 
+"up" axis (either Y or Z).
+
+Filename: bunny_raw(-1250Y).ply
+MeshLabXML name: bunny_raw
+Description: model is identical to the original source, except it has been 
+converted to a binary ply file to reduce file size.
+
+Filename: bunny_flat(1Z).ply
+MeshLabXML name: bunny
+Description: model has had the following changes applied:
+    - Scaled to actual size in mm (see "Notes on units and scale" below)
+    - Hole under chin has been filled
+    - Unreferenced vertices have been deleted
+    - Bottom has been sliced flat and placed on the XY plane
+    - Model has been rotated to Z up
+The above changes result in a model which is watertight and manifold, e.g. 
+suitable for 3D printing.
+
+Notes on units and scale:
+The units and scale of the original model are unknown. The principals 
+involved (Marc Levoy and Greg Turk) were contacted however they no longer 
+have this information available. Based on the reported size of the actual 
+object (approximately 7.5 inches high and 8 inches long), units of mm and a 
+scale factor of 1:1250 is assumed for the original model to approximate the 
+correct size.

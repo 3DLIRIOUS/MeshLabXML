@@ -14,7 +14,7 @@ def measure_aabb(fbasename=None, log=None):
     fext = os.path.splitext(fbasename)[1][1:].strip().lower()
     if fext != 'xyz':
         fin = 'TEMP3D_aabb.xyz'
-        run(log, file_in=fbasename, file_out=fin, script=None)
+        run(log=log, file_in=fbasename, file_out=fin, script=None)
     else:
         fin = fbasename
     fread = open(fin, 'r')
@@ -53,6 +53,14 @@ def measure_aabb(fbasename=None, log=None):
     except UnboundLocalError:
         print('Error: aabb input file does not contain valid data. Exiting ...')
         sys.exit(1)
+    for key, value in aabb.items():
+        if log is None:
+            print('%s = %s' % (key, value))
+        else:
+            log_file = open(log, 'a')
+            log_file.write('%s = %s\n'  % (key, value))
+            log_file.close()
+    """
     if log is not None:
         log_file = open(log, 'a')
         #log_file.write('***Axis Aligned Bounding Results for file "%s":\n' % fbasename)
@@ -63,6 +71,7 @@ def measure_aabb(fbasename=None, log=None):
         log_file.write('diagonal = %s\n\n' % aabb['diagonal'])
         log_file.close()
     # print(aabb)
+    """
     return aabb
 
 
@@ -116,7 +125,7 @@ def measure_geometry(fbasename=None, log=None):
     begin(script, file_in)
     compute.measure_geometry(script)
     end(script)
-    run(log, ml_log=ml_log, file_in=file_in, file_out=file_out, script=script)
+    run(log=log, ml_log=ml_log, file_in=file_in, file_out=file_out, script=script)
 
     if log is not None:
         log_file = open(log, 'a')
@@ -146,7 +155,7 @@ def measure_all(fbasename=None, log=None):
     compute.measure_geometry(script)
     compute.measure_topology(script)
     end(script)
-    run(log, ml_log=ml_log, file_in=file_in, file_out=file_out, script=script)
+    run(log=log, ml_log=ml_log, file_in=file_in, file_out=file_out, script=script)
 
     if log is not None:
         log_file = open(log, 'a')
@@ -185,7 +194,7 @@ def measure_dimension(fbasename=None, log=None, axis1=None, offset1=0.0,
     compute.section(script, axis1, offset1, surface=True)
     compute.section(script, axis2, offset2, surface=False)
     end(script)
-    run(log, file_in=fbasename, file_out=file_out, script=script)
+    run(log=log, file_in=fbasename, file_out=file_out, script=script)
 
     for val in ('x', 'y', 'z'):
         if val not in (axis1, axis2):

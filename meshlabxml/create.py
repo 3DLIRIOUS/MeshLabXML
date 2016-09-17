@@ -296,23 +296,16 @@ def torus(script='TEMP3D_default.mlx',
     return current_layer, last_layer
 
 
-def plane(script='TEMP3D_default.mlx', size=1.0,
-          x_segments=1, y_segments=1,
-          center=False, color=None,
-          current_layer=None, last_layer=None):
+def grid(script='TEMP3D_default.mlx', size=1.0,
+         x_segments=1, y_segments=1,
+         center=False, color=None,
+         current_layer=None, last_layer=None):
     """2D square/plane/grid created on XY plane
-    num_V_X=2 # Number of vertices in the X direction. Must be at least 2
-    (start and end vertices); setting this to a higher value will create an
-    evenly spaced grid.
-    num_V_Y=2 # Number of vertices in the Y direction. Must be at least 2
-    (start and end vertices); setting this to a higher value will create an
-    evenly spaced grid.
+    
+    x_segments # Number of segments in the X direction.
+    y_segments # Number of segments in the Y direction.
     center="false" # If true square will be centered on origin;
-    otherwise it is place in the positive XY quadrant. Note that the
-    "center" parameter in the mlx script does not actually center the square,
-    not sure what it is doing. Instead this is set to false, which places
-    the plane in the -X,+Y quadrant, and it is translated to the
-    appropriate position after creation.
+    otherwise it is place in the positive XY quadrant.
     """
     if current_layer is not None:
         current_layer += 1
@@ -365,6 +358,11 @@ def plane(script='TEMP3D_default.mlx', size=1.0,
     transform.function(script, z_func='rint(z)')
     """This is to work around a bug in MeshLab whereby the Grid Generator does not
     create zero values for z. Ref bug #458: https://sourceforge.net/p/meshlab/bugs/458/"""
+    """Note that the "center" parameter in the mlx script does not actually
+    center the square, not sure what it is doing. Instead this is set to false,
+    which places the plane in the -X,+Y quadrant, and it is translated to the
+    appropriate position after creation.
+    """
     if center:
         transform.translate(script, value=[size[0] / 2, -size[1] / 2, 0])
     else:
@@ -457,12 +455,12 @@ def cylinder_open_hires(script='TEMP3D_default.mlx', height=1.0,
     else:
         z_translate = 0.0
 
-    current_layer, last_layer = plane(script,
-                                      [2 * math.pi * radius, height],
-                                      x_segments=cir_segments,
-                                      y_segments=height_segments,
-                                      current_layer=current_layer,
-                                      last_layer=last_layer)
+    current_layer, last_layer = grid(script,
+                                     [2 * math.pi * radius, height],
+                                     x_segments=cir_segments,
+                                     y_segments=height_segments,
+                                     current_layer=current_layer,
+                                     last_layer=last_layer)
     transform.rotate(script, 'x', 90)
     transform.translate(script, [math.pi * radius / 2, 0, z_translate])
     if not invert_normals:
@@ -491,11 +489,11 @@ def cube_open_hires(script='TEMP3D_default.mlx', size=1.0,
     size = util.make_list(size, 3)
 
     # X sides
-    current_layer, last_layer = plane(script, [size[0], size[2]],
-                                      x_segments=x_segments,
-                                      y_segments=z_segments,
-                                      current_layer=current_layer,
-                                      last_layer=last_layer)
+    current_layer, last_layer = grid(script, [size[0], size[2]],
+                                     x_segments=x_segments,
+                                     y_segments=z_segments,
+                                     current_layer=current_layer,
+                                     last_layer=last_layer)
     transform.rotate(script, 'x', 90)
     #transform.translate(script, [0, 0, -size[2]])
     current_layer, last_layer = layers.duplicate(script,
@@ -506,11 +504,11 @@ def cube_open_hires(script='TEMP3D_default.mlx', size=1.0,
     transform.translate(script, [size[0], size[1], 0])
 
     # Y sides
-    current_layer, last_layer = plane(script, [size[2], size[1]],
-                                      x_segments=z_segments,
-                                      y_segments=y_segments,
-                                      current_layer=current_layer,
-                                      last_layer=last_layer)
+    current_layer, last_layer = grid(script, [size[2], size[1]],
+                                     x_segments=z_segments,
+                                     y_segments=y_segments,
+                                     current_layer=current_layer,
+                                     last_layer=last_layer)
     transform.rotate(script, 'y', -90)
     #transform.rotate(script, 'z', 90)
     #transform.translate(script, [0, 0, -size[2]])
@@ -548,8 +546,8 @@ def plane_hires_edges(script='TEMP3D_default.mlx', size=1.0,
         last_layer += 1
     size = util.make_list(size, 2)
 
-    plane(script, size=[x_segments + y_segments - 1, 1],
-          x_segments=(x_segments + y_segments - 1), y_segments=1)
+    grid(script, size=[x_segments + y_segments - 1, 1],
+         x_segments=(x_segments + y_segments - 1), y_segments=1)
     # Deform left side
     transform.function(
         script,
@@ -616,12 +614,12 @@ def cube_hires(script='TEMP3D_default.mlx', size=1.0,
     size = util.make_list(size, 3)
 
     # Top
-    current_layer, last_layer = plane(script,
-                                      size,
-                                      x_segments,
-                                      y_segments,
-                                      current_layer=current_layer,
-                                      last_layer=last_layer)
+    current_layer, last_layer = grid(script,
+                                     size,
+                                     x_segments,
+                                     y_segments,
+                                     current_layer=current_layer,
+                                     last_layer=last_layer)
     transform.translate(script, [0, 0, size[2]])
 
     # Bottom
