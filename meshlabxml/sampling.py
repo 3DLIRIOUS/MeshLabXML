@@ -40,6 +40,7 @@ def hausdorff_distance(script='TEMP3D_default.mlx',
       maxdist=0.05 * AABB['diag'] #5% of AABB[diag]
       maxdistmax=AABB['diag']
     """
+    # TODO: parse output (min, max, mean, etc.)
 
     script_file = open(script, 'a')
     script_file.write('  <filter name="Hausdorff Distance">\n' +
