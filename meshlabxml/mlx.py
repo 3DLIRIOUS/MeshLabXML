@@ -61,6 +61,55 @@ Notes on meshlabserver filters - tested with 1.34Beta:
 """
 
 
+def handle_error(program_name, cmd, log=None):
+    """Subprocess program error handling
+    
+    Args:
+        program_name (str): name of the subprocess program
+    
+    Returns:
+        break_now (bool): indicate whether calling program should break out of loop
+    
+    """
+    
+    print('\nHouston, we have a problem.',
+          '\n%s did not finish sucessfully. Review the log' % program_name,
+          'file and the input file(s) to see what went wrong.')
+    print('%s command: "%s"' % (program_name, cmd))
+    if log is not None:
+        print('log: "%s"' % log)
+    print('Where do we go from here?')
+    print(' r  - retry running %s (probably after' % program_name,
+          'you\'ve fixed any problems with the input files)')
+    print(' c  - continue on with the script (probably after',
+          'you\'ve manually re-run and generated the desired',
+          'output file(s)')
+    print(' x  - exit, keeping the TEMP3D files and log')
+    print(' xd - exit, deleting the TEMP3D files and log')
+    while True:
+        choice = input('Select r, c, x, or xd: ')
+        if choice not in ('r', 'c', 'x', 'xd'):
+            print('Please enter a valid option.')
+        else:
+            break
+    if choice == 'x':
+        print('Exiting ...')
+        sys.exit(1)
+    elif choice == 'xd':
+        print('Deleting TEMP3D* and log files and exiting ...')
+        util.delete_all('TEMP3D*')
+        if log is not None:
+            os.remove(log)
+        sys.exit(1)
+    elif choice == 'c':
+        print('Continuing on ...')
+        break_now = True
+    elif choice == 'r':
+        print('Retrying %s cmd ...' % program_name)
+        break_now = False
+    return break_now
+
+
 def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
         mlp_in=None, mlp_out=None, overwrite=False, file_in=None,
         file_out=None, output_mask=None, cmd=None):
@@ -129,7 +178,7 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
             if not isinstance(mlp_in, list):
                 mlp_in = [mlp_in]
             for val in mlp_in:
-                cmd += ' -p %s' % val
+                cmd += ' -p "%s"' % val
         if mlp_out is not None:
             cmd += ' -w %s' % mlp_out
             if overwrite:
@@ -145,13 +194,13 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
                 file_in = [file_in]
             for val in file_in:
                 if val == 'bunny':
-                    cmd += ' -i %s' % os.path.join(THIS_MODULEPATH, os.pardir,
+                    cmd += ' -i "%s"' % os.path.join(THIS_MODULEPATH, os.pardir,
                         'models', 'bunny_flat(1Z).ply')
                 elif val == 'bunny_raw':
-                    cmd += ' -i %s' % os.path.join(THIS_MODULEPATH, os.pardir,
+                    cmd += ' -i "%s"' % os.path.join(THIS_MODULEPATH, os.pardir,
                         'models', 'bunny_raw(-1250Y).ply')
                 else:
-                    cmd += ' -i %s' % val
+                    cmd += ' -i "%s"' % val
         if file_out is not None:
             # make a list if it isn't already
             if not isinstance(file_out, list):
@@ -162,13 +211,13 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
             else:
                 output_mask = []
             for index, val in enumerate(file_out):
-                cmd += ' -o %s' % val
+                cmd += ' -o "%s"' % val
                 try:
                     cmd += ' %s' % output_mask[index]
                 except IndexError:  # If output_mask can't be found use defaults
                     cmd += default_output_mask(val)
         if script is not None:
-            cmd += ' -s %s' % script
+            cmd += ' -s "%s"' % script
     if log is not None:
         log_file = open(log, 'a')
         log_file.write('meshlabserver cmd = %s\n' % cmd)
@@ -189,43 +238,8 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
                                       universal_newlines=True)
         if log is not None:
             log_file.close()
-        if return_code == 0:
+        if (return_code == 0) or handle_error(program_name='MeshLab', cmd=cmd, log=log):
             break
-        else:
-            # TODO: create an error handling function from the below
-            print('Houston, we have a problem.\n',
-                  'MeshLab did not finish sucessfully. Review the log',
-                  'file and the input file(s) to see what went wrong.\n',
-                  'MeshLab command: "%s"\n' % cmd,
-                  'log: "%s"\n' % log)
-            print('Where do we go from here?')
-            print(' r  - retry running meshlabserver (probably after',
-                  'you\'ve fixed any problems with the input files)')
-            print(' c  - continue on with the script (probably after',
-                  'you\'ve manually re-run and generated the desired',
-                  'output file(s)')
-            print(' x  - exit, keeping the TEMP3D files and log')
-            print(' xd - exit, deleting the TEMP3D files and log')
-            while True:
-                choice = input('Select r, c, x, or xd: ')
-                if choice not in ('r', 'c', 'x', 'xd'):
-                    print('Please enter a valid option.')
-                else:
-                    break
-            if choice == 'x':
-                print('Exiting ...')
-                sys.exit(1)
-            elif choice == 'xd':
-                print('Deleting TEMP3D* and log files and exiting ...')
-                util.delete_all('TEMP3D*')
-                if log is not None:
-                    os.remove(log)
-                sys.exit(1)
-            elif choice == 'c':
-                print('Continuing on ...')
-                break
-            elif choice == 'r':
-                print('Retrying meshlabserver cmd ...')
     if log is not None:
         log_file = open(log, 'a')
         log_file.write('***END OF MESHLAB STDOUT & STDERR***\n')

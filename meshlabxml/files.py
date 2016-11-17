@@ -7,6 +7,7 @@ import math
 from . import run, begin, end
 from . import util
 from . import compute
+from . import transform
 
 
 def measure_aabb(fbasename=None, log=None):
@@ -72,6 +73,39 @@ def measure_aabb(fbasename=None, log=None):
         log_file.close()
     # print(aabb)
     """
+    return aabb
+
+
+def measure_section(fbasename=None, log=None, axis='z', offset=0.0,
+                    rotate_x_angle=None):
+    """Measure a cross section of a mesh
+    
+    Perform a plane cut in one of the major axes (X, Y, Z). If you want to cut on
+    a different plane you will need to rotate the model in place, perform the cut,
+    and rotate it back.
+    
+    Args:
+        fbasename (str): filename of input model
+        log (str): filename of log file
+        axis (str): axis perpendicular to the cutting plane, e.g. specify "z" to cut
+            parallel to the XY plane.
+        offset (float): amount to offset the cutting plane from the origin
+        rotate_x_angle (float): degrees to rotate about the X axis. Useful for correcting "Up" direction: 90 to rotate Y to Z, and -90 to rotate Z to Y. 
+
+    Returns:
+        aabb (dict): section measurements
+    """
+    script = 'TEMP3D_measure_section.mlx'
+    file_in = fbasename
+    file_out = 'TEMP3D_aabb.xyz'
+
+    begin(script, file_in)
+    if rotate_x_angle is not None:
+        transform.rotate(script, axis='x', angle=rotate_x_angle)
+    compute.section(script, axis=axis, offset=offset)
+    end(script)
+    run(log=log, file_in=file_in, file_out=file_out, script=script)
+    aabb = measure_aabb(file_out, log)
     return aabb
 
 

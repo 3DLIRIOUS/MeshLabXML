@@ -13,6 +13,8 @@ from . import sampling
 from . import select
 from . import smooth
 from . import subdivide
+from . import texture
+from . import transfer
 from . import transform
 from . import util
 from . import vert_color
