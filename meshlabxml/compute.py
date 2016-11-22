@@ -108,16 +108,12 @@ def parse_geometry(ml_log, log=None):
     with open(ml_log) as fread:
         for line in fread:
             if 'Mesh Volume' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
                 geometry['volume_mm3'] = util.to_float(line.split()[3])
                 geometry['volume_cm3'] = geometry['volume_mm3'] * 0.001
             if 'Mesh Surface' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
                 geometry['area_mm2'] = util.to_float(line.split()[3])
                 geometry['area_cm2'] = geometry['area_mm2'] * 0.01
             if 'Mesh Total Len of' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
-                #print(line.split(' '))
                 if 'including faux edges' in line:
                     geometry['total_edge_length_incl_faux'] = util.to_float(
                         line.split()[7])
@@ -125,43 +121,36 @@ def parse_geometry(ml_log, log=None):
                     geometry['total_edge_length'] = util.to_float(
                         line.split()[7])
             if 'Thin shell barycenter' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
                 geometry['barycenter'] = (line.split()[3:6])
                 geometry['barycenter'] = [
                     util.to_float(val) for val in geometry['barycenter']]
             if 'Center of Mass' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
                 geometry['center_of_mass'] = (line.split()[4:7])
                 geometry['center_of_mass'] = [
                     util.to_float(val) for val in geometry['center_of_mass']]
             if 'Inertia Tensor' in line:
                 geometry['inertia_tensor'] = []
                 for val in range(3):
-                    # remove extra whitespace
-                    row = ' '.join(next(fread, val).split())
-                    row = (row.split(' ')[1:4])
+                    row = (next(fread, val).split()[1:4])
                     row = [util.to_float(b) for b in row]
                     geometry['inertia_tensor'].append(row)
             if 'Principal axes' in line:
                 geometry['principal_axes'] = []
                 for val in range(3):
-                    # remove extra whitespace
-                    row = ' '.join(next(fread, val).split())
-                    row = (row.split(' ')[1:4])
+                    row = (next(fread, val).split()[1:4])
                     row = [util.to_float(b) for b in row]
                     geometry['principal_axes'].append(row)
             if 'axis momenta' in line:
-                line = ' '.join(next(fread).split())  # remove extra whitespace
-                geometry['axis_momenta'] = (line.split(' ')[1:4])
+                geometry['axis_momenta'] = (next(fread).split()[1:4])
                 geometry['axis_momenta'] = [
                     util.to_float(val) for val in geometry['axis_momenta']]
                 break  # stop after we find the first match
     for key, value in geometry.items():
         if log is None:
-            print('%s = %s' % (key, value))
+            print('{:27} = {}'.format(key, value))
         else:
             log_file = open(log, 'a')
-            log_file.write('%s = %s\n'  % (key, value))
+            log_file.write('{:27} = {}\n'.format(key, value))
             log_file.close()
     """
     if log is None:
@@ -224,34 +213,27 @@ def parse_topology(ml_log, log=None):
     with open(ml_log) as fread:
         for line in fread:
             if 'V:' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
-                topology['vert_num'] = int(line.split()[1])
-                topology['edge_num'] = int(line.split()[3])
-                topology['face_num'] = int(line.split()[5])
+                vert_edge_face = line.replace('V:', ' ').replace('E:', ' ').replace('F:', ' ').split()
+                topology['vert_num'] = int(vert_edge_face[0])
+                topology['edge_num'] = int(vert_edge_face[1])
+                topology['face_num'] = int(vert_edge_face[2])
             if 'Unreferenced Vertices' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
                 topology['unref_vert_num'] = int(line.split()[2])
             if 'Boundary Edges' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
                 topology['boundry_edge_num'] = int(line.split()[2])
             if 'Mesh is composed by' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
                 topology['part_num'] = int(line.split()[4])
             if 'non 2-manifold mesh' in line:
                 topology['manifold'] = False
             if 'non two manifold edges' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
                 topology['non_manifold_edge'] = int(line.split()[2])
             if 'non two manifold vertexes' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
                 topology['non_manifold_vert'] = int(line.split()[2])
             if 'Genus is' in line:  # undefined or int
-                line = ' '.join(line.split())  # remove extra whitespace
                 topology['genus'] = line.split()[2]
                 if topology['genus'] != 'undefined':
                     topology['genus'] = int(topology['genus'])
             if 'holes' in line:
-                line = ' '.join(line.split())  # remove extra whitespace
                 topology['hole_num'] = line.split()[2]
                 if topology['hole_num'] == 'a':
                     topology['hole_num'] = 'undefined'
@@ -259,10 +241,10 @@ def parse_topology(ml_log, log=None):
                     topology['hole_num'] = int(topology['hole_num'])
     for key, value in topology.items():
         if log is None:
-            print('%s = %s' % (key, value))
+            print('{:16} = {}'.format(key, value))
         else:
             log_file = open(log, 'a')
-            log_file.write('%s = %s\n'  % (key, value))
+            log_file.write('{:16} = {}\n'.format(key, value))
             log_file.close()
     """
         if 'vert_num' in topology:

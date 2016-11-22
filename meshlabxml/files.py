@@ -56,10 +56,10 @@ def measure_aabb(fbasename=None, log=None):
         sys.exit(1)
     for key, value in aabb.items():
         if log is None:
-            print('%s = %s' % (key, value))
+            print('{:10} = {}'.format(key, value))
         else:
             log_file = open(log, 'a')
-            log_file.write('%s = %s\n'  % (key, value))
+            log_file.write('{:10} = {}\n'.format(key, value))
             log_file.close()
     """
     if log is not None:
@@ -132,8 +132,9 @@ def polylinesort(fbasename=None, log=None):
             polyline_vertices.append(
                 [util.to_float(x_co), util.to_float(y_co), util.to_float(z_co)])
         elif element == 'l':
-            # x and y are really p1 and p2
-            line_segments.append([int(x_co), int(y_co)])
+            p1 = x_co
+            p2 = y_co
+            line_segments.append([int(p1), int(p2)])
 
     fread.close()
     if log is not None:
@@ -177,6 +178,27 @@ def measure_geometry(fbasename=None, log=None):
         log_file.close()
     geometry = compute.parse_geometry(ml_log, log)
     return aabb, geometry
+
+
+def measure_topology(fbasename=None, log=None):
+    """Measures mesh topology. """
+    script = 'TEMP3D_measure_topology.mlx'
+    ml_log = 'TEMP3D_measure_topology_log.txt'
+    file_in = fbasename
+
+    begin(script, file_in)
+    compute.measure_topology(script)
+    end(script)
+    run(log=log, ml_log=ml_log, file_in=file_in, script=script)
+
+    if log is not None:
+        log_file = open(log, 'a')
+        log_file.write(
+            '***Parsed Topology Values for file "%s":\n' %
+            fbasename)
+        log_file.close()
+    topology = compute.parse_topology(ml_log, log)
+    return topology
 
 
 def measure_all(fbasename=None, log=None):
