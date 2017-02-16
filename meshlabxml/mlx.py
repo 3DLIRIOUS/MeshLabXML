@@ -160,6 +160,9 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
             "meshlabserver -input file.stl". If not None, this
             will override all other arguements except for log.
 
+    Notes:
+        Meshlabserver can't handle spaces in paths or filenames (on Windows at least; haven't tested on other platforms). Enclosing the name in quotes or escaping the space has no effect.
+
     Returns:
         return code of meshlabserver process; 0 if successful
     """
@@ -249,8 +252,28 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
 
 
 def find_texture_files(fbasename, log=None):
-    """Finds the filenames of the associated texture file(s) (and material
-    file for obj) for the mesh."""
+    """Finds the filenames of the referenced texture file(s) (and material
+    file for obj) for the mesh.
+
+    Args:
+        fbasename (str): input filename. Supported file extensions:
+            obj
+            ply
+            dae
+            x3d
+            wrl
+        log (str): filename to log output
+
+    Returns:
+        list: list of all of the texture filenames referenced by the input file.
+            May contain duplicates if the texture files are referenced more
+            than once. List is empty if no texture files are found.
+        list: list of all of the unique texture filenames, also empty if no
+            texture files are found.
+        str: for obj files only, returns the name of the referenced material file.
+            Returns None if no material file is found.
+
+    """
     fext = os.path.splitext(fbasename)[1][1:].strip().lower()
     material_file = None
     texture_files = []
@@ -316,6 +339,7 @@ def find_texture_files(fbasename, log=None):
                     break
     elif fext != 'stl':  # add other formats that don't support teture, e.g. xyz?
         print('File extension %s is not currently supported' % fext)
+        # TODO: raise exception here
     texture_files_unique = list(set(texture_files))
     if log is not None:
         log_file = open(log, 'a')
@@ -464,6 +488,106 @@ def end(script='TEMP3D_default.mlx'):
     script_file = open(script, 'a')
     script_file.write('</FilterScript>')
     script_file.close()
+
+
+def create_mlp(file_out, mlp_mesh=None, mlp_raster=None):
+    """ Create mlp file
+    mlp_mesh (list containing dictionary)
+        filename*
+        label
+        matrix
+
+    mlp_raster
+        filename*
+        label
+        semantic
+        camera
+            trans_vector*
+            rotation_matrix*
+            focal_length*
+            image_px*
+            image_res_mm_per_px*
+            lens_distortion
+            center_px
+    * Required
+
+    http://vcg.isti.cnr.it/~cignoni/newvcglib/html/shot.html
+    """
+
+
+    # Opening lines
+    mlp_file = open(file_out, 'w')
+    mlp_file.write('\n'.join([
+        '<!DOCTYPE MeshLabDocument>',
+        '<MeshLabProject>\n']))
+    mlp_file.close()
+
+    if mlp_mesh is not None:
+        mlp_file = open(file_out, 'a')
+        mlp_file.write(' <MeshGroup>\n')
+        for i, val in enumerate(mlp_mesh):
+            if 'label' not in mlp_mesh[i]:
+                mlp_mesh[i]['label'] = mlp_mesh[i]['filename']
+            if 'matrix' not in mlp_mesh[i]:
+                mlp_mesh[i]['matrix'] = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+            mlp_file.write('  <MLMesh filename="{}" label="{}">\n'.format(mlp_mesh[i]['filename'], mlp_mesh[i]['label']))
+            mlp_file.write('\n'.join([
+                '   <MLMatrix44>',
+                '{m[0]} {m[1]} {m[2]} {m[3]} '.format(m=mlp_mesh[i]['matrix'][0]),
+                '{m[0]} {m[1]} {m[2]} {m[3]} '.format(m=mlp_mesh[i]['matrix'][1]),
+                '{m[0]} {m[1]} {m[2]} {m[3]} '.format(m=mlp_mesh[i]['matrix'][2]),
+                '{m[0]} {m[1]} {m[2]} {m[3]} '.format(m=mlp_mesh[i]['matrix'][3]),
+                '</MLMatrix44>',
+                '  </MLMesh>\n']))
+        mlp_file.write(' </MeshGroup>\n')
+        mlp_file.close()
+        # print(mlp_mesh)
+    else:
+        mlp_file = open(file_out, 'a')
+        mlp_file.write(' <MeshGroup/>\n')
+        mlp_file.close()
+    if mlp_raster is not None:
+        mlp_file = open(file_out, 'a')
+        mlp_file.write(' <RasterGroup>\n')
+        for i, val in enumerate(mlp_raster):
+            if 'label' not in mlp_raster[i]:
+                mlp_raster[i]['label'] = mlp_raster[i]['filename']
+            if 'semantic' not in mlp_raster[i]:
+                mlp_raster[i]['semantic'] = 1
+            if 'lens_distortion' not in mlp_raster[i]['camera']:
+                mlp_raster[i]['camera']['lens_distortion'] = [0, 0]
+            if 'center_px' not in mlp_raster[i]['camera']:
+                mlp_raster[i]['camera']['center_px'] = [int(mlp_raster[i]['camera']['image_px'][0]/2), int(mlp_raster[i]['camera']['image_px'][1]/2)]
+
+            mlp_file.write('  <MLRaster label="{}">\n'.format(mlp_raster[i]['label']))
+
+            mlp_file.write(' '.join([
+                '   <VCGCamera',
+                'TranslationVector="{m[0]} {m[1]} {m[2]} {m[3]}"'.format(m=mlp_raster[i]['camera']['trans_vector']),
+                'RotationMatrix="{m[0][0]} {m[0][1]} {m[0][2]} {m[0][3]} {m[1][0]} {m[1][1]} {m[1][2]} {m[1][3]} {m[2][0]} {m[2][1]} {m[2][2]} {m[2][3]} {m[3][0]} {m[3][1]} {m[3][2]} {m[3][3]} "'.format(m=mlp_raster[i]['camera']['rotation_matrix']),
+                'FocalMm="{}"'.format(mlp_raster[i]['camera']['focal_length']),
+                'ViewportPx="{m[0]} {m[1]}"'.format(m=mlp_raster[i]['camera']['image_px']),
+                'PixelSizeMm="{m[0]} {m[1]}"'.format(m=mlp_raster[i]['camera']['image_res_mm_per_px']),
+                'LensDistortion="{m[0]} {m[1]}"'.format(m=mlp_raster[i]['camera']['lens_distortion']),
+                'CenterPx="{m[0]} {m[1]}"'.format(m=mlp_raster[i]['camera']['center_px']),
+                '/>\n']))
+            mlp_file.write('   <Plane semantic="{}" fileName="{}"/>\n'.format(mlp_raster[i]['semantic'], mlp_raster[i]['filename']))
+            mlp_file.write(' </MLRaster>\n')
+        mlp_file.write(' </RasterGroup>\n')
+        mlp_file.close()
+        # print(mlp_raster)
+    else:
+        mlp_file = open(file_out, 'a')
+        mlp_file.write(' <RasterGroup/>\n')
+        mlp_file.close()
+
+
+    # Closing lines
+    mlp_file = open(file_out, 'a')
+    mlp_file.write('</MeshLabProject>\n')
+    mlp_file.close()
+
+    return
 
 
 def muparser_ref():
