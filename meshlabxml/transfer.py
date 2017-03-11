@@ -6,7 +6,11 @@ from . import util
 
 
 def tex2vc(script='TEMP3D_default.mlx'):
-    """Transfer texture colors to vertex colors"""
+    """Transfer texture colors to vertex colors
+
+    BUG: this does not work correctly if the file has multiple textures; it
+    only uses one texture and remaps all of the UVs to that
+    """
     script_file = open(script, 'a')
     script_file.write('  <filter name="Transfer Color: Texture to Vertex"/>\n')
     script_file.close()
@@ -116,9 +120,11 @@ def vert_attributes_2_meshes(script='TEMP3D_default.mlx',
                              current_layer=None, last_layer=None):
     """Vertex Attribute Tranfer (between 2 meshes)
     
-    Transfer the choosen per-vertex attributes from one mesh to another. Useful to transfer attributes to different representations of the same object. For each vertex of the target mesh the closest point (not vertex!) on the source mesh is comoputed, and the requested interpolated attributes from that source point are copied into the target vertex.
+    Transfer the chosen per-vertex attributes from one mesh to another. Useful to transfer attributes to different representations of the same object. For each vertex of the target mesh the closest point (not vertex!) on the source mesh is computed, and the requested interpolated attributes from that source point are copied into the target vertex.
     
     The algorithm assumes that the two meshes are reasonably similar and aligned.
+
+    UpperBound: absolute value (not percentage)
     """
     script_file = open(script, 'a')
     script_file.write('  <filter name="Vertex Attribute Transfer">\n')
@@ -307,10 +313,7 @@ def color2tex_2_meshes(script='TEMP3D_default.mlx',
 
 def tex2vc_2_meshes(script='TEMP3D_default.mlx',
                                source_mesh=0, target_mesh=1,
-                               attribute=0, upper_bound=0.5, tex_name='TEMP3D_texture.png',
-                               tex_width=1024, tex_height=1024,
-                               overwrite_tex=False, assign_tex=False,
-                               fill_tex=True,
+                               upper_bound=0.5,
                                current_layer=None, last_layer=None):
     """Transfer texture colors to vertex colors (between 2 meshes)
 
