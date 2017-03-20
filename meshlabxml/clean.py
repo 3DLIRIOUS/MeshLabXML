@@ -4,6 +4,23 @@ Also see select and delete modules for more cleaning functions
 """
 
 
+def merge_vert_o(FilterScriptObject, threshold=0.0):
+    # This filter only works on the current layer
+    FilterScriptObject.filters.append(''.join([
+        '  <filter name="Merge Close Vertices">\n',
+        '    <Param name="Threshold" ',
+        'value="%s" ' % threshold,
+        'description="Merging distance" ',
+        'min="0" ',
+        'max="1" ',
+        'type="RichAbsPerc" ',
+        'tooltip="All the vertices that closer than this threshold',
+        ' are merged together. Use very small values, default value',
+        ' is 1/10000 of bounding box diagonal."/>\n',
+        '  </filter>\n']))
+    return None
+
+
 def merge_vert(script='TEMP3D_default.mlx', threshold=0.0,
                current_layer=None, last_layer=None):
     # This filter only works on the current layer

@@ -30,9 +30,9 @@ from . import util
 from . import layers
 from . import clean
 
+# Global variables
 ML_VERSION = '1.3.4Beta'
 """str: MeshLab version to target
-
 Currently only affects output mask flag
 """
 
@@ -60,20 +60,131 @@ Notes on meshlabserver filters - tested with 1.34Beta:
     the filter will still work (tested with translate, may not work for all)
 """
 
+class FilterScriptObject(object):
+    """
+
+    begin - need file names. Need these first to have correct layers; need to know however
+    many we're importing!
+    layers = list of mesh layers, with name as the entry
+    file_in
+    mlp_in
+
+
+    begin code
+
+    filters = actual text of filters. This is a list with each filter in a separate entry
+    end code
+    use self.meshes.[len(self.meshes)]
+    use cur_layer, tot_layer in strings and replace at the end? Sounds way to complicated
+    for now; just be sure to provide input files to start!
+
+    add run method?
+
+    """
+    def __init__(self, file_in=None, mlp_in=None):
+        self.filters = []
+        self.layer_stack = [-1]
+        self.opening = ['<!DOCTYPE FilterScript>\n<FilterScript>\n']
+        self.closing = ['</FilterScript>']
+        self.__stl_layers = []
+        # Process input files
+        # Process project files first
+
+        # TODO: test to make sure this works with "bunny"; should work fine!
+        if mlp_in is not None:
+            # make a list if it isn't already
+            if not isinstance(mlp_in, list):
+                mlp_in = [mlp_in]
+            for val in mlp_in:
+                tree = ET.parse(val)
+                #root = tree.getroot()
+                for elem in tree.iter(tag='MLMesh'):
+                    filename = (elem.attrib['filename'])
+                    fext = os.path.splitext(filename)[1][1:].strip().lower()
+                    label = (elem.attrib['label'])
+                    # add new mesh to the end of the mesh stack
+                    self.layer_stack.insert(self.last_layer() + 1, label)
+                    # change current mesh
+                    self.layer_stack[self.last_layer() + 1] = self.last_layer()
+                    # If the mesh file extension is stl, change to that layer and
+                    # run clean.merge_vert
+                    if fext == 'stl':
+                        # TODO: FIX THIS WITH NEW METHOD CALL
+                        self.__stl_layers.append(self.current_layer())
+        # Process separate input files next
+        if file_in is not None:
+            # make a list if it isn't already
+            if not isinstance(file_in, list):
+                file_in = [file_in]
+            for val in file_in:
+                fext = os.path.splitext(val)[1][1:].strip().lower()
+                label = os.path.splitext(val)[0].strip() # file prefix
+                #print('layer_stack = %s' % self.layer_stack)
+                #print('last_layer = %s' % self.last_layer())
+                #print('current_layer = %s' % self.current_layer())
+                
+                
+                # add new mesh to the end of the mesh stack
+                self.layer_stack.insert(self.last_layer() + 1, label)
+                # change current mesh
+                self.layer_stack[self.last_layer() + 1] = self.last_layer()
+                # If the mesh file extension is stl, change to that layer and
+                # run clean.merge_vert
+                if fext == 'stl':
+                    self.__stl_layers.append(self.current_layer())
+        # If some input files were stl, we need to change back to the last layer
+        # If the mesh file extension is stl, change to that layer and
+        # run clean.merge_vert
+        if len(self.__stl_layers) > 0:
+            for layer in self.__stl_layers:
+                if layer != self.current_layer():
+                    layers.change_o(self, layer)
+                clean.merge_vert_o(self)
+            layers.change_o(self, self.last_layer()) # Change back to the last layer
+        elif self.last_layer() == -1:
+            # If no input files are provided, create a dummy file
+            # with a single vertex and delete it first in the script.
+            # This works around the fact that meshlabserver will
+            # not run without an input file.
+            # TODO: use a proper temp file here
+            file_in = ['TEMP3D_DELETE_ME.xyz']
+            file_in_descriptor = open(file_in[0], 'w')
+            file_in_descriptor.write('0 0 0')
+            file_in_descriptor.close()
+            self.layer_stack.insert(self.last_layer() + 1, 'DELETE_ME')
+            self.layer_stack[self.last_layer() + 1] = self.last_layer()
+            layers.delete_o(self)
+        #"""
+
+    def last_layer(self):
+        """ Returns the index number of the last layer """
+        #print('last layer = %s' % (len(self.layer_stack) - 2))
+        return len(self.layer_stack) - 2
+
+    def current_layer(self):
+        """ Returns the index number of the current layer """
+        return self.layer_stack[self.last_layer() + 1]
+
+    def save_to_file(self, script_file):
+        """ Save filter script to an mlx file """
+        script_file_descriptor = open(script_file, 'w')
+        script_file_descriptor.write(''.join(self.opening + self.filters + self.closing))
+        script_file_descriptor.close()
+
 
 def handle_error(program_name, cmd, log=None):
     """Subprocess program error handling
-    
+
     Args:
         program_name (str): name of the subprocess program
-    
+
     Returns:
         break_now (bool): indicate whether calling program should break out of loop
-    
+
     """
-    
+
     print('\nHouston, we have a problem.',
-          '\n%s did not finish sucessfully. Review the log' % program_name,
+          '\n%s did not finish successfully. Review the log' % program_name,
           'file and the input file(s) to see what went wrong.')
     print('%s command: "%s"' % (program_name, cmd))
     if log is not None:
@@ -175,6 +286,9 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
     if cmd is None:
         cmd = 'meshlabserver '
         if ml_log is not None:
+            # Initialize ml_log
+            ml_log_file = open(ml_log, 'w')
+            ml_log_file.close()
             cmd += ' -l %s' % ml_log
         if mlp_in is not None:
             # make a list if it isn't already

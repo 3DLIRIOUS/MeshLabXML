@@ -51,6 +51,15 @@ def join(script='TEMP3D_default.mlx', merge_visible=True,
     return current_layer, last_layer
 
 
+def delete_o(FilterScriptObject):
+    """Delete current layer"""
+    FilterScriptObject.filters.append('  <filter name="Delete Current Mesh"/>\n')
+    del FilterScriptObject.layer_stack[FilterScriptObject.current_layer()]
+    # Set current layer:
+    FilterScriptObject.layer_stack[FilterScriptObject.last_layer() + 1] = FilterScriptObject.current_layer() - 1
+    return None
+
+
 def delete(script='TEMP3D_default.mlx',
            current_layer=None, last_layer=None):
     """Delete current layer"""
@@ -65,7 +74,7 @@ def delete(script='TEMP3D_default.mlx',
 
 def rename(script='TEMP3D_default.mlx', label='blank',
            current_layer=None, last_layer=None):
-    """Renames current layer label. Not currently very useful for non-interctive use."""
+    """Renames current layer label. Not currently very useful for non-interactive use."""
     script_file = open(script, 'a')
     script_file.write('  <filter name="Rename Current Mesh">\n' +
 
@@ -78,6 +87,28 @@ def rename(script='TEMP3D_default.mlx', label='blank',
                       '  </filter>\n')
     script_file.close()
     return current_layer, last_layer
+
+
+def change_o(FilterScriptObject, layer_num):
+    """change the current layer by specifying the new layer number.
+    BROKEN: this filter crashes meshlabserver but runs fine in the gui. A MeshLab bug is suspected.
+    TODO: do some more troubleshooting before filing a bug report.
+      Find the minimum case that will cause this to occur, i.e. open cube, duplicate, change_L
+      test on different computers
+      does initial delete filter have anything to do with it?
+
+    """
+    FilterScriptObject.filters.append(''.join([
+        '  <filter name="Change the current layer">\n',
+        '    <Param name="mesh" ',
+        'value="%d" ' % layer_num,
+        'description="Mesh" ',
+        'type="RichMesh" ',
+        'tooltip="The number of the layer to change to"/>\n',
+        '  </filter>\n']))
+    FilterScriptObject.layer_stack[FilterScriptObject.last_layer() + 1] = layer_num
+    return None
+
 
 
 def change(script='TEMP3D_default.mlx', layer_num=0,
