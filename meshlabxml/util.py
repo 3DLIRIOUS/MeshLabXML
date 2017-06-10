@@ -5,6 +5,7 @@ import sys
 import inspect
 from glob import glob
 
+import meshlabxml as mlx
 
 def is_number(num):
     try:
@@ -87,3 +88,23 @@ def make_list(var, num_terms):
         for _ in range(1, num_terms):
             var.append(var[0])
     return var
+
+
+def _write_filter(script, filter_xml):
+    """ Write filter to FilterScript object or filename
+
+    Args:
+        script (FilterScript object or filename str): the FilterScript object
+            or script filename to write the filter to.
+        filter_xml (str): the xml filter string
+
+    """
+    if isinstance(script, mlx.FilterScript):
+        script.filters.append(filter_xml)
+    elif isinstance(script, str):
+        script_file = open(script, 'a')
+        script_file.write(filter_xml)
+        script_file.close()
+    else:
+        print(filter_xml)
+    return None

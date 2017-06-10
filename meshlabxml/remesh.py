@@ -286,3 +286,10 @@ def reconstruct_surface_poisson(script='TEMP3D_default.mlx',
                       '  </filter>\n')
     script_file.close()
     return current_layer, last_layer
+
+
+def reconstruct_surface_poisson_screened(script='TEMP3D_default.mlx',
+                                octree_depth=10, solver_divide=8,
+                                samples_per_node=1.0, offset=1.0,
+                                current_layer=None, last_layer=None):
+    pass

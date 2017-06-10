@@ -60,7 +60,7 @@ Notes on meshlabserver filters - tested with 1.34Beta:
     the filter will still work (tested with translate, may not work for all)
 """
 
-class FilterScriptObject(object):
+class FilterScript(object):
     """
 
     begin - need file names. Need these first to have correct layers; need to know however
@@ -83,10 +83,12 @@ class FilterScriptObject(object):
     """
     def __init__(self, file_in=None, mlp_in=None):
         self.filters = []
-        self.layer_stack = [-1]
+        self.layer_stack = [-1] # set current layer to -1
         self.opening = ['<!DOCTYPE FilterScript>\n<FilterScript>\n']
         self.closing = ['</FilterScript>']
         self.__stl_layers = []
+        self.file_in = file_in
+        self.mlp_in = mlp_in
         # Process input files
         # Process project files first
 
@@ -122,8 +124,8 @@ class FilterScriptObject(object):
                 #print('layer_stack = %s' % self.layer_stack)
                 #print('last_layer = %s' % self.last_layer())
                 #print('current_layer = %s' % self.current_layer())
-                
-                
+
+
                 # add new mesh to the end of the mesh stack
                 self.layer_stack.insert(self.last_layer() + 1, label)
                 # change current mesh
@@ -167,6 +169,7 @@ class FilterScriptObject(object):
 
     def save_to_file(self, script_file):
         """ Save filter script to an mlx file """
+        # TODO: issue warning if self.filters is empty
         script_file_descriptor = open(script_file, 'w')
         script_file_descriptor.write(''.join(self.opening + self.filters + self.closing))
         script_file_descriptor.close()
@@ -277,14 +280,14 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
     Returns:
         return code of meshlabserver process; 0 if successful
     """
-    print_meshlabserver_output = False
+    print_meshlabserver_output = True
     """
     Pass meshlabserver's output to stdout; useful for debugging.
     Only used if log is None.
     """
 
     if cmd is None:
-        cmd = 'meshlabserver '
+        cmd = 'meshlabserver'
         if ml_log is not None:
             # Initialize ml_log
             ml_log_file = open(ml_log, 'w')
@@ -312,10 +315,10 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
             for val in file_in:
                 if val == 'bunny':
                     cmd += ' -i "%s"' % os.path.join(THIS_MODULEPATH, os.pardir,
-                        'models', 'bunny_flat(1Z).ply')
+                                                     'models', 'bunny_flat(1Z).ply')
                 elif val == 'bunny_raw':
                     cmd += ' -i "%s"' % os.path.join(THIS_MODULEPATH, os.pardir,
-                        'models', 'bunny_raw(-1250Y).ply')
+                                                     'models', 'bunny_raw(-1250Y).ply')
                 else:
                     cmd += ' -i "%s"' % val
         if file_out is not None:

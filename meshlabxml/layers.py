@@ -74,7 +74,11 @@ def delete(script='TEMP3D_default.mlx',
 
 def rename(script='TEMP3D_default.mlx', label='blank',
            current_layer=None, last_layer=None):
-    """Renames current layer label. Not currently very useful for non-interactive use."""
+    """Renames current layer label. Not currently very useful for non-interactive use.
+
+    Can be useful for outputting mlp files, as the output file names use
+    the labels.
+    """
     script_file = open(script, 'a')
     script_file.write('  <filter name="Rename Current Mesh">\n' +
 
