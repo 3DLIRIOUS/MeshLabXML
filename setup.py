@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='MeshLabXML',
-      version='134.20170311',
+      version='2017.06',
       description='Create and run MeshLab XML scripts',
       url='https://github.com/3DLIRIOUS/MeshLabXML',
       author='3DLirious',
