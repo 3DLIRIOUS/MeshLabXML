@@ -1,171 +1,270 @@
 """ MeshLabXML layer functions """
 
+import meshlabxml as mlx
+from . import util
 
-def join(script='TEMP3D_default.mlx', merge_visible=True,
-         merge_vert=False, delete_layer=True,
-         keep_unreferenced_vert=False,
-         current_layer=None, last_layer=None):
+def join(script, merge_visible=True, merge_vert=False, delete_layer=True,
+         keep_unreferenced_vert=False):
+    """ Flatten all or only the visible layers into a single new mesh.
 
-    # NOTE: filter will discard textures, creates a new layer "Merged Mesh"
-    if current_layer is not None:
+    Transformations are preserved. Existing layers can be optionally
+    deleted.
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        merge_visible (bool): merge only visible layers
+        merge_vert (bool): merge the vertices that are duplicated among
+            different layers. Very useful when the layers are spliced portions
+            of a single big mesh.
+        delete_layer (bool): delete all the merged layers. If all layers are
+            visible only a single layer will remain after the invocation of
+            this filter.
+        keep_unreferenced_vert (bool): Do not discard unreferenced vertices
+            from source layers. Necessary for point-only layers.
+
+    Layer stack:
+        Creates a new layer "Merged Mesh"
+        Changes current layer to the new layer
+        Optionally deletes all other layers
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+
+    Bugs:
+        UV textures: not currently preserved, however will be in a future
+            release. https://github.com/cnr-isti-vclab/meshlab/issues/128
+        merge_visible: it is not currently possible to change the layer
+            visibility from meshlabserver, however this will be possible
+            in the future https://github.com/cnr-isti-vclab/meshlab/issues/123
+    """
+    filter_xml = ''.join([
+        '  <filter name="Flatten Visible Layers">\n',
+        '    <Param name="MergeVisible" ',
+        'value="{}" '.format(str(merge_visible).lower()),
+        'description="Merge Only Visible Layers" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="MergeVertices" ',
+        'value="{}" '.format(str(merge_vert).lower()),
+        'description="Merge duplicate vertices" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="DeleteLayer" ',
+        'value="{}" '.format(str(delete_layer).lower()),
+        'description="Delete Layers" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="AlsoUnreferenced" ',
+        'value="{}" '.format(str(keep_unreferenced_vert).lower()),
+        'description="Keep unreferenced vertices" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    if isinstance(script, mlx.FilterScript):
+        script.add_layer('Merged Mesh')
         if delete_layer:
-            current_layer = 0
-            last_layer = 0
-        else:
-            current_layer += 1
-            last_layer += 1
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Flatten Visible Layers">\n' +
-
-                      '    <Param name="MergeVisible" ' +
-                      'value="%s" ' % str(merge_visible).lower() +
-                      'description="Merge Only Visible Layers" ' +
-                      'type="RichBool" ' +
-                      'tooltip="Merge only visible layers"/>\n' +
-
-                      '    <Param name="MergeVertices" ' +
-                      'value="%s" ' % str(merge_vert).lower() +
-                      'description="Merge duplicate vertices" ' +
-                      'type="RichBool" ' +
-                      'tooltip="Merge the vertices that are duplicated among' +
-                      ' different layers. Very useful when the layers are spliced' +
-                      ' portions of a single big mesh."/>\n' +
-
-                      '    <Param name="DeleteLayer" ' +
-                      'value="%s" ' % str(delete_layer).lower() +
-                      'description="Delete Layers" ' +
-                      'type="RichBool" ' +
-                      'tooltip="Delete all the merged layers. If all layers are' +
-                      ' visible only a single layer will remain after the' +
-                      ' invocation of this filter."/>\n' +
-
-                      '    <Param name="AlsoUnreferenced" ' +
-                      'value="%s" ' % str(keep_unreferenced_vert).lower() +
-                      'description="Keep unreferenced vertices" ' +
-                      'type="RichBool" ' +
-                      'tooltip="Do not discard unreferenced vertices from source' +
-                      ' layers. Necessary for point-only layers"/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
-    return current_layer, last_layer
-
-
-def delete_o(FilterScriptObject):
-    """Delete current layer"""
-    FilterScriptObject.filters.append('  <filter name="Delete Current Mesh"/>\n')
-    del FilterScriptObject.layer_stack[FilterScriptObject.current_layer()]
-    # Set current layer:
-    FilterScriptObject.layer_stack[FilterScriptObject.last_layer() + 1] = FilterScriptObject.current_layer() - 1
+            # As it is not yet possible to change the layer visibility, all
+            # layers will be deleted. This will be updated once layer
+            # visibility is tracked.
+            for i in range(script.last_layer()):
+                delete(script, 0)
+    else:
+        util._write_filter(script, filter_xml)
     return None
 
 
-def delete(script='TEMP3D_default.mlx',
-           current_layer=None, last_layer=None):
-    """Delete current layer"""
-    if current_layer is not None:
-        current_layer -= 1
-        last_layer -= 1
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Delete Current Mesh"/>\n')
-    script_file.close()
-    return current_layer, last_layer
+def delete(script, layer_num=None):
+    """ Delete layer
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        layer_num (int): the number of the layer to delete. Default is the
+            current layer. Not supported on the file base API.
+
+    Layer stack:
+        Deletes a layer
+        will change current layer if deleted layer is lower in the stack
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    filter_xml = '  <filter name="Delete Current Mesh"/>\n'
+    if isinstance(script, mlx.FilterScript):
+        if (layer_num is None) or (layer_num == script.current_layer()):
+            util._write_filter(script, filter_xml)
+            script.del_layer(script.current_layer())
+        else:
+            cur_layer = script.current_layer()
+            change(script, layer_num)
+            util._write_filter(script, filter_xml)
+            if layer_num < script.current_layer():
+                change(script, cur_layer - 1)
+            else:
+                change(script, cur_layer)
+            script.del_layer(layer_num)
+    else:
+        util._write_filter(script, filter_xml)
+    return None
 
 
-def rename(script='TEMP3D_default.mlx', label='blank',
-           current_layer=None, last_layer=None):
-    """Renames current layer label. Not currently very useful for non-interactive use.
+def rename(script, label='blank', layer_num=None):
+    """ Rename layer label
 
     Can be useful for outputting mlp files, as the output file names use
     the labels.
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        label (str): new label for the mesh layer
+        layer_num (int): layer number to rename. Default is the
+            current layer. Not supported on the file base API.
+
+    Layer stack:
+        Renames a layer
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Rename Current Mesh">\n' +
-
-                      '    <Param name="newName" ' +
-                      'value="%s" ' % label +
-                      'description="New Label" ' +
-                      'type="RichString" ' +
-                      'tooltip="New Label for the mesh"/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
-    return current_layer, last_layer
-
-
-def change_o(FilterScriptObject, layer_num):
-    """change the current layer by specifying the new layer number.
-    BROKEN: this filter crashes meshlabserver but runs fine in the gui. A MeshLab bug is suspected.
-    TODO: do some more troubleshooting before filing a bug report.
-      Find the minimum case that will cause this to occur, i.e. open cube, duplicate, change_L
-      test on different computers
-      does initial delete filter have anything to do with it?
-
-    """
-    FilterScriptObject.filters.append(''.join([
-        '  <filter name="Change the current layer">\n',
-        '    <Param name="mesh" ',
-        'value="%d" ' % layer_num,
-        'description="Mesh" ',
-        'type="RichMesh" ',
-        'tooltip="The number of the layer to change to"/>\n',
-        '  </filter>\n']))
-    FilterScriptObject.layer_stack[FilterScriptObject.last_layer() + 1] = layer_num
+    filter_xml = ''.join([
+        '  <filter name="Rename Current Mesh">\n',
+        '    <Param name="newName" ',
+        'value="{}" '.format(label),
+        'description="New Label" ',
+        'type="RichString" ',
+        '/>\n',
+        '  </filter>\n'])
+    if isinstance(script, mlx.FilterScript):
+        if (layer_num is None) or (layer_num == script.current_layer()):
+            util._write_filter(script, filter_xml)
+            script.layer_stack[script.current_layer()] = label
+        else:
+            cur_layer = script.current_layer()
+            change(script, layer_num)
+            util._write_filter(script, filter_xml)
+            change(script, cur_layer)
+            script.layer_stack[layer_num] = label
+    else:
+        util._write_filter(script, filter_xml)
     return None
 
 
+def change(script, layer_num=None):
+    """ Change the current layer by specifying the new layer number.
 
-def change(script='TEMP3D_default.mlx', layer_num=0,
-           current_layer=None, last_layer=None):
-    """change the current layer by specifying the new layer number.
-    BROKEN: this filter crashes meshlabserver but runs fine in the gui. A MeshLab bug is suspected.
-    TODO: do some more troubleshooting before filing a bug report.
-      Find the minimum case that will cause this to occur, i.e. open cube, duplicate, change_L
-      test on different computers
-      does initial delete filter have anything to do with it?
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        layer_num (int): the number of the layer to change to. Default is the
+            last layer if script is a FilterScript object; if script is a
+            filename the default is the first layer.
 
+    Layer stack:
+        Modifies current layer
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
-    if current_layer is not None:
-        current_layer = layer_num
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Change the current layer">\n' +
-
-                      '    <Param name="mesh" ' +
-                      'value="%d" ' % layer_num +
-                      'description="Mesh" ' +
-                      'type="RichMesh" ' +
-                      'tooltip="The number of the layer to change to"/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
-    return current_layer, last_layer
-
-
-def duplicate(script='TEMP3D_default.mlx',
-              current_layer=None, last_layer=None):
-    """Duplicate the current layer. New layer label is '*_copy'."""
-    if current_layer is not None:
-        current_layer += 1
-        last_layer += 1
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Duplicate Current layer"/>\n')
-    script_file.close()
-    return current_layer, last_layer
-
-
-def split_parts(script='TEMP3D_default.mlx', part_num=None,
-                current_layer=None, last_layer=None):
-    """Splits mesh into separate parts (components). Creates layers named
-    'CC 0', 'CC 1', etc.
-
-    Warnings: does not preserve textures."""
-    if current_layer is not None:
-        if part_num is not None:
-            current_layer += part_num
-            last_layer += part_num
+    if layer_num is None:
+        if isinstance(script, mlx.FilterScript):
+            layer_num = script.last_layer()
         else:
-            print('Warning: the number of parts was not provided and cannot be determined automatically. Cannot set correct current layer and last layer values.')
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Split in Connected Components"/>\n')
-    script_file.close()
-    return current_layer, last_layer
+            layer_num = 0
+    filter_xml = ''.join([
+        '  <filter name="Change the current layer">\n',
+        '    <Param name="mesh" ',
+        'value="{:d}" '.format(layer_num),
+        'description="Mesh" ',
+        'type="RichMesh" ',
+        '/>\n',
+        '  </filter>\n'])
+    util._write_filter(script, filter_xml)
+    if isinstance(script, mlx.FilterScript):
+        script.set_current_layer(layer_num)
+        #script.layer_stack[len(self.layer_stack) - 1] = layer_num
+    return None
+
+
+def duplicate(script, layer_num=None):
+    """ Duplicate a layer.
+
+    New layer label is '*_copy'.
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        layer_num (int): layer number to duplicate. Default is the
+            current layer. Not supported on the file base API.
+
+    Layer stack:
+        Creates a new layer
+        Changes current layer to the new layer
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    filter_xml = '  <filter name="Duplicate Current layer"/>\n'
+    if isinstance(script, mlx.FilterScript):
+        if (layer_num is None) or (layer_num == script.current_layer()):
+            util._write_filter(script, filter_xml)
+            script.add_layer('{}_copy'.format(script.layer_stack[script.current_layer()]), True)
+        else:
+            change(script, layer_num)
+            util._write_filter(script, filter_xml)
+            script.add_layer('{}_copy'.format(script.layer_stack[layer_num]), True)
+    else:
+        util._write_filter(script, filter_xml)
+    return None
+
+
+def split_parts(script, part_num=None, layer_num=None):
+    """ Split current layer into many layers, one for each part (connected
+        component)
+
+    Mesh is split so that the largest part is the lowest named layer "CC 0"
+    and the smallest part is the highest numbered "CC" layer.
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        part_num (int): the number of parts in the model. This is needed in
+            order to properly create and manage the layer stack. Can be found
+            with mlx.compute.measure_topology.
+        layer_num (int): the number of the layer to split. Default is the
+            current layer. Not supported on the file base API.
+
+    Layer stack:
+        Creates a new layer for each part named "CC 0", "CC 1", etc.
+        Changes current layer to the last new layer
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+
+    Bugs:
+        UV textures: not currently preserved, however will be in a future
+            release. https://github.com/cnr-isti-vclab/meshlab/issues/127
+    """
+    filter_xml = '  <filter name="Split in Connected Components"/>\n'
+    if isinstance(script, mlx.FilterScript):
+        if (layer_num is not None) and (layer_num != script.current_layer()):
+            change(script, layer_num)
+        util._write_filter(script, filter_xml)
+        if part_num is not None:
+            for i in range(part_num):
+                script.add_layer('CC {}'.format(i), True)
+        else:
+            script.add_layer('CC 0', True)
+            print('Warning: the number of parts was not provided and cannot',
+                  'be determined automatically. The layer stack is likely',
+                  'incorrect!')
+    else:
+        util._write_filter(script, filter_xml)
+    return None

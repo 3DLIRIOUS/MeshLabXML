@@ -25,6 +25,7 @@ import inspect
 import subprocess
 import xml.etree.ElementTree as ET
 import math
+import tempfile
 
 from . import util
 from . import layers
@@ -82,6 +83,7 @@ class FilterScript(object):
 
     """
     def __init__(self, file_in=None, mlp_in=None):
+        self.ml_version = '1.3.4BETA' # MeshLab version
         self.filters = []
         self.layer_stack = [-1] # set current layer to -1
         self.opening = ['<!DOCTYPE FilterScript>\n<FilterScript>\n']
@@ -95,8 +97,7 @@ class FilterScript(object):
         # TODO: test to make sure this works with "bunny"; should work fine!
         if mlp_in is not None:
             # make a list if it isn't already
-            if not isinstance(mlp_in, list):
-                mlp_in = [mlp_in]
+            mlp_in = util.make_list(mlp_in)
             for val in mlp_in:
                 tree = ET.parse(val)
                 #root = tree.getroot()
@@ -105,9 +106,11 @@ class FilterScript(object):
                     fext = os.path.splitext(filename)[1][1:].strip().lower()
                     label = (elem.attrib['label'])
                     # add new mesh to the end of the mesh stack
-                    self.layer_stack.insert(self.last_layer() + 1, label)
+                    self.add_layer(label)
+                    #self.layer_stack.insert(self.last_layer() + 1, label)
                     # change current mesh
-                    self.layer_stack[self.last_layer() + 1] = self.last_layer()
+                    self.set_current_layer(self.last_layer())
+                    #self.layer_stack[self.last_layer() + 1] = self.last_layer()
                     # If the mesh file extension is stl, change to that layer and
                     # run clean.merge_vert
                     if fext == 'stl':
@@ -116,8 +119,7 @@ class FilterScript(object):
         # Process separate input files next
         if file_in is not None:
             # make a list if it isn't already
-            if not isinstance(file_in, list):
-                file_in = [file_in]
+            file_in = util.make_list(file_in)
             for val in file_in:
                 fext = os.path.splitext(val)[1][1:].strip().lower()
                 label = os.path.splitext(val)[0].strip() # file prefix
@@ -125,11 +127,12 @@ class FilterScript(object):
                 #print('last_layer = %s' % self.last_layer())
                 #print('current_layer = %s' % self.current_layer())
 
-
                 # add new mesh to the end of the mesh stack
-                self.layer_stack.insert(self.last_layer() + 1, label)
+                self.add_layer(label)
+                #self.layer_stack.insert(self.last_layer() + 1, label)
                 # change current mesh
-                self.layer_stack[self.last_layer() + 1] = self.last_layer()
+                self.set_current_layer(self.last_layer())
+                #self.layer_stack[self.last_layer() + 1] = self.last_layer()
                 # If the mesh file extension is stl, change to that layer and
                 # run clean.merge_vert
                 if fext == 'stl':
@@ -140,9 +143,9 @@ class FilterScript(object):
         if len(self.__stl_layers) > 0:
             for layer in self.__stl_layers:
                 if layer != self.current_layer():
-                    layers.change_o(self, layer)
-                clean.merge_vert_o(self)
-            layers.change_o(self, self.last_layer()) # Change back to the last layer
+                    layers.change(self, layer)
+                clean.merge_vert(self)
+            layers.change(self, self.last_layer()) # Change back to the last layer
         elif self.last_layer() == -1:
             # If no input files are provided, create a dummy file
             # with a single vertex and delete it first in the script.
@@ -153,9 +156,9 @@ class FilterScript(object):
             file_in_descriptor = open(file_in[0], 'w')
             file_in_descriptor.write('0 0 0')
             file_in_descriptor.close()
-            self.layer_stack.insert(self.last_layer() + 1, 'DELETE_ME')
-            self.layer_stack[self.last_layer() + 1] = self.last_layer()
-            layers.delete_o(self)
+            self.add_layer('DELETE_ME')
+            self.set_current_layer(self.last_layer())
+            layers.delete(self)
         #"""
 
     def last_layer(self):
@@ -165,7 +168,33 @@ class FilterScript(object):
 
     def current_layer(self):
         """ Returns the index number of the current layer """
-        return self.layer_stack[self.last_layer() + 1]
+        return self.layer_stack[len(self.layer_stack) - 1]
+
+    def set_current_layer(self, layer_num):
+        """ Set the current layer to layer_num """
+        self.layer_stack[len(self.layer_stack) - 1] = layer_num
+        return None
+
+    def add_layer(self, label, change_layer=True):
+        """ Add new mesh layer to the end of the stack
+
+        Args:
+            label (str): new label for the mesh layer
+            change_layer (bool): change to the newly created layer
+        """
+        self.layer_stack.insert(self.last_layer() + 1, label)
+        if change_layer:
+            self.set_current_layer(self.last_layer())
+        return None
+
+    def del_layer(self, layer_num):
+        """ Delete mesh layer """
+        del self.layer_stack[layer_num]
+        # Adjust current layer if needed
+        if layer_num <= self.current_layer():
+            self.set_current_layer(self.current_layer() - 1)
+        return None
+
 
     def save_to_file(self, script_file):
         """ Save filter script to an mlx file """
@@ -173,6 +202,25 @@ class FilterScript(object):
         script_file_descriptor = open(script_file, 'w')
         script_file_descriptor.write(''.join(self.opening + self.filters + self.closing))
         script_file_descriptor.close()
+
+    def run_script(self, log=None, ml_log=None, mlp_out=None, overwrite=False,
+        file_out=None, output_mask=None, script_file=None):
+
+        temp_script = False
+        if script_file is None:
+            # Create temporary script file
+            temp_script = True
+            temp_script_file = tempfile.NamedTemporaryFile(delete=False)
+            temp_script_file.close()
+            self.save_to_file(temp_script_file.name)
+
+        run(script=temp_script_file.name, log=log, ml_log=ml_log,
+            mlp_in=self.mlp_in, mlp_out=mlp_out, overwrite=overwrite,
+            file_in=self.file_in, file_out=file_out, output_mask=output_mask)
+
+        # Delete temp script file
+        if temp_script:
+            os.remove(temp_script_file.name)
 
 
 def handle_error(program_name, cmd, log=None):
@@ -295,8 +343,7 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
             cmd += ' -l %s' % ml_log
         if mlp_in is not None:
             # make a list if it isn't already
-            if not isinstance(mlp_in, list):
-                mlp_in = [mlp_in]
+            mlp_in = util.make_list(mlp_in)
             for val in mlp_in:
                 cmd += ' -p "%s"' % val
         if mlp_out is not None:
@@ -310,8 +357,7 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
             file_in = ['TEMP3D.xyz']
         if file_in is not None:
             # make a list if it isn't already
-            if not isinstance(file_in, list):
-                file_in = [file_in]
+            file_in = util.make_list(file_in)
             for val in file_in:
                 if val == 'bunny':
                     cmd += ' -i "%s"' % os.path.join(THIS_MODULEPATH, os.pardir,
@@ -323,11 +369,9 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
                     cmd += ' -i "%s"' % val
         if file_out is not None:
             # make a list if it isn't already
-            if not isinstance(file_out, list):
-                file_out = [file_out]
+            file_out = util.make_list(file_out)
             if output_mask is not None:
-                if not isinstance(output_mask, list):
-                    output_mask = [output_mask]
+                output_mask = util.make_list(output_mask)
             else:
                 output_mask = []
             for index, val in enumerate(file_out):

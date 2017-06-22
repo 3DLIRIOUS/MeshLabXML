@@ -17,9 +17,12 @@ def merge_vert(script, threshold=0.0):
             than this threshold are merged together. Use very small values,
             default is zero.
 
-    Notes:
-        This filter only works on the current layer
+    Layer stack:
+        No impacts; this filter only works on the current layer
 
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
     filter_xml = ''.join([
         '  <filter name="Merge Close Vertices">\n',
@@ -54,6 +57,12 @@ def close_holes(script, hole_max_edge=30, selected=False,
             the hole. It is an heuristic, non intersecting hole filling can be
             NP-complete.
 
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
     filter_xml = ''.join([
         '  <filter name="Close Holes">\n',
@@ -92,6 +101,12 @@ def split_vert_on_nonmanifold_face(script, vert_displacement_ratio=0.0):
             along the average vector going from its position to the centroid
             of the FF connected faces sharing it.
 
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
     filter_xml = ''.join([
         '  <filter name="Split Vertexes Incident on Non Manifold Faces">\n',
@@ -106,16 +121,24 @@ def split_vert_on_nonmanifold_face(script, vert_displacement_ratio=0.0):
 
 
 def fix_folded_face(script):
-    """
-    Delete all the single folded faces. A face is considered folded if its normal is opposite to all the adjacent faces. It is removed by flipping it against the face f adjacent along the edge e such that the vertex opposite to e fall inside f.
+    """ Delete all the single folded faces.
+
+    A face is considered folded if its normal is opposite to all the adjacent
+    faces. It is removed by flipping it against the face f adjacent along the
+    edge e such that the vertex opposite to e fall inside f.
 
     Args:
         script: the FilterScript object or script filename to write
             the filter to.
 
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
-    filter_xml = ''.join([
-        '  <filter name="Remove Isolated Folded Faces by Edge Flip"/>\n'])
+    filter_xml = '  <filter name="Remove Isolated Folded Faces by Edge Flip"/>\n'
     util._write_filter(script, filter_xml)
     return None
 
@@ -140,6 +163,12 @@ def snap_mismatched_borders(script, edge_dist_ratio=0.01, unify_vert=True):
             vertexes very close to the line are removed.
         unify_vert (bool): If true the snap vertices are welded together.
 
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
     filter_xml = ''.join([
         '  <filter name="Snap Mismatched Borders">\n',

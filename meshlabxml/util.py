@@ -8,6 +8,9 @@ from glob import glob
 import meshlabxml as mlx
 
 def is_number(num):
+    """ Check if a variable is a number by trying to convert it to a float.
+
+    """
     try:
         float(num)
         return True
@@ -16,6 +19,7 @@ def is_number(num):
 
 
 def to_float(num):
+    """ Convert a variable to a float """
     try:
         float(num)
         return float(num)
@@ -24,10 +28,10 @@ def to_float(num):
 
 
 def delete_all(filename):
-    """delete files in the current directory that match a pattern.
-    
-    Intended for temp files, e.g. mlx.delete('TEMP3D*').
-    
+    """ Delete all files in the current directory that match a pattern.
+
+    Intended primarily for temp files, e.g. mlx.delete_all('TEMP3D*').
+
     """
     for fread in glob(filename):
         os.remove(fread)
@@ -35,7 +39,8 @@ def delete_all(filename):
 
 def color_values(color):
     """Read color_names.txt and find the red, green, and blue values
-    for a named color."""
+        for a named color.
+    """
     # Get the directory where this script file is located:
     this_dir = os.path.dirname(
         os.path.realpath(
@@ -61,7 +66,11 @@ def color_values(color):
 
 
 def check_list(var, num_terms):
-    """Check if a variable is a list and is the correct length. If variable is not a list it will make it a list of the correct length with all terms identical."""
+    """ Check if a variable is a list and is the correct length.
+
+    If variable is not a list it will make it a list of the correct length with
+    all terms identical.
+    """
     if not isinstance(var, list):
         if isinstance(var, tuple):
             var = list(var)
@@ -77,16 +86,20 @@ def check_list(var, num_terms):
     return var
 
 
-def make_list(var, num_terms):
-    """Check if a variable is a list and is the correct length. If variable is not a list it will make it a list of the correct length with all terms identical."""
+def make_list(var, num_terms=1):
+    """ Make a variable a list if it is not already
+
+    If variable is not a list it will make it a list of the correct length with
+    all terms identical.
+    """
     if not isinstance(var, list):
         if isinstance(var, tuple):
             var = list(var)
         else:
             var = [var]
-    if len(var) == 1:
-        for _ in range(1, num_terms):
-            var.append(var[0])
+    #if len(var) == 1:
+            for _ in range(1, num_terms):
+                var.append(var[0])
     return var
 
 

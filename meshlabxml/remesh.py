@@ -1,5 +1,8 @@
 """ MeshLabXML remeshing functions """
 
+import meshlabxml as mlx
+from . import util
+
 
 def simplify(script='TEMP3D_default.mlx', texture=True, faces=25000,
              target_perc=0.0, quality_thr=0.3, preserve_boundary=False,
@@ -7,7 +10,7 @@ def simplify(script='TEMP3D_default.mlx', texture=True, faces=25000,
              optimal_placement=True, planar_quadric=False,
              selected=False, extra_tex_coord_weight=1.0,
              preserve_topology=True, quality_weight=False,
-             autoclean=True, current_layer=None, last_layer=None):
+             autoclean=True):
     # TIP: measure topology fist to find number of faces and area
     script_file = open(script, 'a')
 
@@ -132,13 +135,12 @@ def simplify(script='TEMP3D_default.mlx', texture=True, faces=25000,
 
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return None
 
 
 def uniform_resampling(script='TEMP3D_default.mlx', voxel=1.0,
                        offset=0.0, merge_vert=True, discretize=False,
-                       multisample=False, thicken=False,
-                       current_layer=None, last_layer=None):
+                       multisample=False, thicken=False):
 
     # If you prefer to use a precision (as a percentage of AABB[diag])
     # instead of the voxel cell size include the following code in the parent
@@ -211,11 +213,10 @@ def uniform_resampling(script='TEMP3D_default.mlx', voxel=1.0,
 
                       '  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return None
 
 
-def hull(script='TEMP3D_default.mlx', reorient_normal=True,
-         current_layer=None, last_layer=None):
+def hull(script='TEMP3D_default.mlx', reorient_normal=True):
     script_file = open(script, 'a')
     script_file.write('  <filter name="Convex Hull">\n' +
 
@@ -228,68 +229,155 @@ def hull(script='TEMP3D_default.mlx', reorient_normal=True,
 
                       '  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return None
 
 
-def reconstruct_surface_poisson(script='TEMP3D_default.mlx',
-                                octree_depth=10, solver_divide=8,
-                                samples_per_node=1.0, offset=1.0,
-                                current_layer=None, last_layer=None):
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Surface Reconstruction: Poisson">\n' +
+def surface_poisson(script, octree_depth=10, solver_divide=8,
+                    samples_per_node=1.0, offset=1.0):
+    """ Use the points and normals to build a surface using the Poisson
+        Surface reconstruction approach.
 
-                      '    <Param name="OctDepth" ' +
-                      'value="%d" ' % octree_depth +
-                      'description="Octree Depth" ' +
-                      'type="RichInt" ' +
-                      'tooltip="Set the depth of the Octree used for extracting the' +
-                      ' final surface. Suggested range 5..10. Higher numbers mean' +
-                      ' higher precision in the reconstruction but also higher' +
-                      ' processing times. Be patient."/>\n' +
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        octree_depth (int): Set the depth of the Octree used for extracting the
+            final surface. Suggested range 5..10. Higher numbers mean higher
+            precision in the reconstruction but also higher processing times.
+            Be patient.
+        solver_divide (int): This integer argument specifies the depth at which
+            a block Gauss-Seidel solver is used to solve the Laplacian
+            equation. Using this parameter helps reduce the memory overhead at
+            the cost of a small increase in reconstruction time. In practice,
+            the authors have found that for reconstructions of depth 9 or
+            higher a subdivide depth of 7 or 8 can reduce the memory usage. The
+            default value is 8.
+        samples_per_node (float): This floating point value specifies the
+            minimum number of sample points that should fall within an octree
+            node as the octree&#xa;construction is adapted to sampling density.
+            For noise-free samples, small values in the range [1.0 - 5.0] can
+            be used. For more noisy samples, larger values in the range
+            [15.0 - 20.0] may be needed to provide a smoother, noise-reduced,
+            reconstruction. The default value is 1.0.
+        offset (float): This floating point value specifies a correction value
+            for the isosurface threshold that is chosen. Values less than 1
+            mean internal offsetting, greater than 1 mean external offsetting.
+            Good values are in the range 0.5 .. 2. The default value is 1.0
+            (no offsetting).
 
-                      '    <Param name="SolverDivide" ' +
-                      'value="%d" ' % solver_divide +
-                      'description="Solver Divide" ' +
-                      'type="RichInt" ' +
-                      'tooltip="This integer argument specifies the depth at which' +
-                      ' a block Gauss-Seidel solver is used to solve the Laplacian' +
-                      ' equation. Using this parameter helps reduce the memory' +
-                      ' overhead at the cost of a small increase in reconstruction' +
-                      ' time. In practice, the authors have found that for' +
-                      ' reconstructions of depth 9 or higher a subdivide depth of 7' +
-                      ' or 8 can reduce the memory usage. The default value is' +
-                      ' 8."/>\n' +
+    Layer stack:
+        Creates 1 new layer 'Poisson mesh'
+        Current layer is changed to new layer
 
-                      '    <Param name="SamplesPerNode" ' +
-                      'value="%s" ' % samples_per_node +
-                      'description="Samples per Node" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="This floating point value specifies the minimum' +
-                      ' number of sample points that should fall within an octree' +
-                      ' node as the octree&#xa;construction is adapted to sampling' +
-                      ' density. For noise-free samples, small values in the range' +
-                      ' [1.0 - 5.0] can be used. For more noisy samples, larger' +
-                      ' values in the range [15.0 - 20.0] may be needed to provide' +
-                      ' a smoother, noise-reduced, reconstruction. The default' +
-                      ' value is 1.0."/>\n' +
-
-                      '    <Param name="Offset" ' +
-                      'value="%s" ' % offset +
-                      'description="Surface offsetting" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="This floating point value specifies a correction' +
-                      ' value for the isosurface threshold that is chosen. Values' +
-                      ' less than 1 mean internal offsetting, greater than 1 mean' +
-                      ' external offsetting. Good values are in the range 0.5 .. 2.' +
-                      ' The default value is 1.0 (no offsetting)."/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
-    return current_layer, last_layer
+    MeshLab versions:
+        1.3.4BETA
+    """
+    filter_xml = ''.join([
+        '  <filter name="Surface Reconstruction: Poisson">\n',
+        '    <Param name="OctDepth" ',
+        'value="{:d}" '.format(octree_depth),
+        'description="Octree Depth" ',
+        'type="RichInt" ',
+        '/>\n',
+        '    <Param name="SolverDivide" ',
+        'value="{:d}" '.format(solver_divide),
+        'description="Solver Divide" ',
+        'type="RichInt" ',
+        '/>\n',
+        '    <Param name="SamplesPerNode" ',
+        'value="{}" '.format(samples_per_node),
+        'description="Samples per Node" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="Offset" ',
+        'value="{}" '.format(offset),
+        'description="Surface offsetting" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '  </filter>\n'])
+    util._write_filter(script, filter_xml)
+    if isinstance(script, mlx.FilterScript):
+        script.add_layer('Poisson mesh', change_layer=True)
+    return None
 
 
-def reconstruct_surface_poisson_screened(script='TEMP3D_default.mlx',
-                                octree_depth=10, solver_divide=8,
-                                samples_per_node=1.0, offset=1.0,
-                                current_layer=None, last_layer=None):
-    pass
+def surface_poisson_screened(script, visible_layer=False, depth=8,
+    full_depth=5, cg_depth=0, scale=1.1, samples_per_node=1.5,
+    point_weight=4.0, iterations=8, confidence=False, pre_clean=False):
+    """ This surface reconstruction algorithm creates watertight
+        surfaces from oriented point sets.
+
+    The filter uses the original code of Michael Kazhdan and Matthew Bolitho
+    implementing the algorithm in the following paper:
+
+    Michael Kazhdan, Hugues Hoppe,
+    "Screened Poisson surface reconstruction"
+    ACM Trans. Graphics, 32(3), 2013
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        visible_layer (bool): If True all the visible layers will be used for
+            providing the points
+        depth (int): This integer is the maximum depth of the tree that will
+            be used for surface reconstruction. Running at depth d corresponds
+            to solving on a voxel grid whose resolution is no larger than
+            2^d x 2^d x 2^d. Note that since the reconstructor adapts the
+            octree to the sampling density, the specified reconstruction depth
+            is only an upper bound. The default value for this parameter is 8.
+        full_depth (int): This integer specifies the depth beyond depth the
+            octree will be adapted. At coarser depths, the octree will be
+            complete, containing all 2^d x 2^d x 2^d nodes. The default value
+            for this parameter is 5.
+        cg_depth (int): This integer is the depth up to which a
+            conjugate-gradients solver will be used to solve the linear system.
+            Beyond this depth Gauss-Seidel relaxation will be used. The default
+            value for this parameter is 0.
+        scale (float): This floating point value specifies the ratio between
+            the diameter of the cube used for reconstruction and the diameter
+            of the samples' bounding cube.  The default value is 1.1.
+        samples_per_node (float): This floating point value specifies the
+            minimum number of sample points that should fall within an octree
+            node as the octree construction is adapted to sampling density. For
+            noise-free samples, small values in the range [1.0 - 5.0] can be
+            used. For more noisy samples, larger values in the range
+            [15.0 - 20.0] may be needed to provide a smoother, noise-reduced,
+            reconstruction. The default value is 1.5.
+        point_weight (float): This floating point value specifies the
+            importance that interpolation of the point samples is given in the
+            formulation of the screened Poisson equation. The results of the
+            original (unscreened) Poisson Reconstruction can be obtained by
+            setting this value to 0. The default value for this parameter is 4.
+        iterations (int): This integer value specifies the number of
+            Gauss-Seidel relaxations to be performed at each level of the
+            hierarchy. The default value for this parameter is 8.
+        confidence (bool): If True this tells the reconstructor to use the
+            quality as confidence information; this is done by scaling the unit
+            normals with the quality values. When the flag is not enabled, all
+            normals are normalized to have unit-length prior to reconstruction.
+        pre_clean (bool): If True will force a cleaning pre-pass on the data
+            removing all unreferenced vertices or vertices with null normals.
+
+    Layer stack:
+        Creates 1 new layer 'Poisson mesh'
+        Current layer is not changed
+
+    MeshLab versions:
+        2016.12
+    """
+    filter_xml = ''.join([
+        '  <xmlfilter name="Screened Poisson Surface Reconstruction">\n',
+        '    <xmlparam name="cgDepth" value="{:d}"/>\n'.format(cg_depth),
+        '    <xmlparam name="confidence" value="{}"/>\n'.format(str(confidence).lower()),
+        '    <xmlparam name="depth" value="{:d}"/>\n'.format(depth),
+        '    <xmlparam name="fullDepth" value="{:d}"/>\n'.format(full_depth),
+        '    <xmlparam name="iters" value="{:d}"/>\n'.format(iterations),
+        '    <xmlparam name="pointWeight" value="{}"/>\n'.format(point_weight),
+        '    <xmlparam name="preClean" value="{}"/>\n'.format(str(pre_clean).lower()),
+        '    <xmlparam name="samplesPerNode" value="{}"/>\n'.format(samples_per_node),
+        '    <xmlparam name="scale" value="{}"/>\n'.format(scale),
+        '    <xmlparam name="visibleLayer" value="{}"/>\n'.format(str(visible_layer).lower()),
+        '  </xmlfilter>\n'])
+    util._write_filter(script, filter_xml)
+    if isinstance(script, mlx.FilterScript):
+        script.add_layer('Poisson mesh', change_layer=False)
+    return None
