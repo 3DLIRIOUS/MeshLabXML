@@ -5,7 +5,6 @@ See select and delete modules for additional cleaning functions
 
 from . import util
 
-
 def merge_vert(script, threshold=0.0):
     """ Merge together all the vertices that are nearer than the specified
     threshold. Like a unify duplicate vertices but with some tolerance.
@@ -18,7 +17,7 @@ def merge_vert(script, threshold=0.0):
             default is zero.
 
     Layer stack:
-        No impacts; this filter only works on the current layer
+        No impacts
 
     MeshLab versions:
         2016.12
@@ -34,7 +33,7 @@ def merge_vert(script, threshold=0.0):
         'type="RichAbsPerc" ',
         '/>\n',
         '  </filter>\n'])
-    util._write_filter(script, filter_xml)
+    util.write_filter(script, filter_xml)
     return None
 
 
@@ -87,7 +86,7 @@ def close_holes(script, hole_max_edge=30, selected=False,
         'type="RichBool" ',
         '/>\n',
         '  </filter>\n'])
-    util._write_filter(script, filter_xml)
+    util.write_filter(script, filter_xml)
     return None
 
 
@@ -116,7 +115,7 @@ def split_vert_on_nonmanifold_face(script, vert_displacement_ratio=0.0):
         'type="RichFloat" ',
         '/>\n',
         '  </filter>\n'])
-    util._write_filter(script, filter_xml)
+    util.write_filter(script, filter_xml)
     return None
 
 
@@ -139,7 +138,7 @@ def fix_folded_face(script):
         1.3.4BETA
     """
     filter_xml = '  <filter name="Remove Isolated Folded Faces by Edge Flip"/>\n'
-    util._write_filter(script, filter_xml)
+    util.write_filter(script, filter_xml)
     return None
 
 
@@ -183,5 +182,5 @@ def snap_mismatched_borders(script, edge_dist_ratio=0.01, unify_vert=True):
         'type="RichBool" ',
         '/>\n',
         '  </filter>\n'])
-    util._write_filter(script, filter_xml)
+    util.write_filter(script, filter_xml)
     return None

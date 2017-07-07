@@ -4,13 +4,12 @@ import sys
 import math
 import re
 
+from . import FilterScript
 from . import util
 from . import mp_atan2
 
-
-def translate2(script='TEMP3D_default.mlx', value=(0.0, 0.0, 0.0),
-               center=False, freeze=True, all_layers=False,
-               current_layer=None, last_layer=None):
+def translate2(script, value=(0.0, 0.0, 0.0), center=False, freeze=True,
+               all_layers=False):
     # Convert value to list if it isn't already
     if not isinstance(value, list):
         value = list(value)
@@ -63,11 +62,10 @@ def translate2(script='TEMP3D_default.mlx', value=(0.0, 0.0, 0.0),
 
                       '  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return None
 
 
-def translate(script='TEMP3D_default.mlx', value=(0.0, 0.0, 0.0),
-              current_layer=None, last_layer=None):
+def translate(script, value=(0.0, 0.0, 0.0)):
     """An alternative translate implementation that uses a geometric function.
     This is more accurate than the built-in version."""
     # Convert value to list if it isn't already
@@ -77,13 +75,11 @@ def translate(script='TEMP3D_default.mlx', value=(0.0, 0.0, 0.0),
              x_func='x+(%s)' % value[0],
              y_func='y+(%s)' % value[1],
              z_func='z+(%s)' % value[2])
-    return current_layer, last_layer
+    return None
 
 
-def rotate2(script='TEMP3D_default.mlx', axis='z', angle=0.0,
-            custom_axis=None, center_pt='origin',
-            custom_center_pt=None, freeze=True, all_layers=False,
-            current_layer=None, last_layer=None):
+def rotate2(script, axis='z', angle=0.0, custom_axis=None, center_pt='origin',
+            custom_center_pt=None, freeze=True, all_layers=False):
     # Convert axis name into number
     if axis.lower() == 'x':
         axis_num = 0
@@ -191,11 +187,10 @@ def rotate2(script='TEMP3D_default.mlx', axis='z', angle=0.0,
 
                       '  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return None
 
 
-def rotate(script='TEMP3D_default.mlx', axis='z', angle=0.0,
-           current_layer=None, last_layer=None):
+def rotate(script, axis='z', angle=0.0):
     """An alternative rotate implementation that uses a geometric function.
     This is more accurate than the built-in version."""
     angle = math.radians(angle)
@@ -217,13 +212,11 @@ def rotate(script='TEMP3D_default.mlx', axis='z', angle=0.0,
     else:
         print('Axis name is not valid; exiting ...')
         sys.exit(1)
-    return current_layer, last_layer
+    return None
 
 
-def scale2(script='TEMP3D_default.mlx', value=1.0,
-           uniform=True, center_pt='origin',
-           custom_center_pt=None, unit=False, freeze=True,
-           all_layers=False, current_layer=None, last_layer=None):
+def scale2(script, value=1.0, uniform=True, center_pt='origin',
+           custom_center_pt=None, unit=False, freeze=True, all_layers=False):
     """# Convert value to list if it isn't already
     if not isinstance(value, list):
         value = list(value)
@@ -313,11 +306,10 @@ def scale2(script='TEMP3D_default.mlx', value=1.0,
 
                       '  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return None
 
 
-def scale(script='TEMP3D_default.mlx', value=1.0,
-          current_layer=None, last_layer=None):
+def scale(script, value=1.0):
     """An alternative scale implementation that uses a geometric function.
     This is more accurate than the built-in version."""
     """# Convert value to list if it isn't already
@@ -331,11 +323,10 @@ def scale(script='TEMP3D_default.mlx', value=1.0,
              x_func='x*(%s)' % value[0],
              y_func='y*(%s)' % value[1],
              z_func='z*(%s)' % value[2])
-    return current_layer, last_layer
+    return None
 
 
-def freeze_matrix(script='TEMP3D_default.mlx', all_layers=False,
-                  current_layer=None, last_layer=None):
+def freeze_matrix(script, all_layers=False):
     script_file = open(script, 'a')
     script_file.write('  <filter name="Freeze Current Matrix">\n' +
 
@@ -348,16 +339,15 @@ def freeze_matrix(script='TEMP3D_default.mlx', all_layers=False,
 
                       '  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return None
 
 
-def function(script='TEMP3D_default.mlx', x_func='x', y_func='y', z_func='z',
-             current_layer=None, last_layer=None):
+def function(script, x_func='x', y_func='y', z_func='z'):
     """Geometric function using muparser lib to generate new Coordinates
 
-    See help(mlx.muparser_ref) for muparser reference documentation.
-
     You can change x, y, z for every vertex according to the function specified.
+
+    See help(mlx.muparser_ref) for muparser reference documentation.
     It's possible to use the following per-vertex variables in the expression:
 
     Variables (per vertex):
@@ -365,7 +355,7 @@ def function(script='TEMP3D_default.mlx', x_func='x', y_func='y', z_func='z',
         nx, ny, nz (normal)
         r, g, b, a (color)
         q (quality)
-        rad
+        rad (radius)
         vi (vertex index)
         vtu, vtv (texture coordinates)
         ti (texture index)
@@ -377,72 +367,63 @@ def function(script='TEMP3D_default.mlx', x_func='x', y_func='y', z_func='z',
         y_func (str): function to generate new coordinates for y
         z_func (str): function to generate new coordinates for z
 
-    Returns:
-        current_layer, last_layer
+    Layer stack:
+        No impacts
 
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Geometric Function">\n')
-    script_file.write(' '.join([
-        '    <Param',
-        'name="x"',
-        'value="%s"' % str(x_func).replace('<', '&lt;'),
-        'description="func x = "',
-        'type="RichString"',
-        '/>\n']))
-    script_file.write(' '.join([
-        '    <Param',
-        'name="y"',
-        'value="%s"' % str(y_func).replace('<', '&lt;'),
-        'description="func y = "',
-        'type="RichString"',
-        '/>\n']))
-    script_file.write(' '.join([
-        '    <Param',
-        'name="z"',
-        'value="%s"' % str(z_func).replace('<', '&lt;'),
-        'description="func z = "',
-        'type="RichString"',
-        '/>\n']))
-    script_file.write('  </filter>\n')
-    """script_file.write('  <filter name="Geometric Function">\n' +
-
-                      '    <Param name="x" ' +
-                      'value="%s" ' % x_func.replace('<', '&lt;') +
-                      'description="func x = " ' +
-                      'type="RichString" ' +
-                      'tooltip="insert function to generate new coord for x"/>\n' +
-
-                      '    <Param name="y" ' +
-                      'value="%s" ' % y_func.replace('<', '&lt;') +
-                      'description="func y = " ' +
-                      'type="RichString" ' +
-                      'tooltip="insert function to generate new coord for y"/>\n' +
-
-                      '    <Param name="z" ' +
-                      'value="%s" ' % z_func.replace('<', '&lt;') +
-                      'description="func z = " ' +
-                      'type="RichString" ' +
-                      'tooltip="insert function to generate new coord for z"/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()"""
-    return current_layer, last_layer
+    filter_xml = ''.join([
+        '  <filter name="Geometric Function">\n',
+        '    <Param name="x" ',
+        'value="{}" '.format(str(x_func).replace('<', '&lt;')),
+        'description="func x = " ',
+        'type="RichString" ',
+        '/>\n',
+        '    <Param name="y" ',
+        'value="{}" '.format(str(y_func).replace('<', '&lt;')),
+        'description="func y = " ',
+        'type="RichString" ',
+        '/>\n',
+        '    <Param name="z" ',
+        'value="{}" '.format(str(z_func).replace('<', '&lt;')),
+        'description="func z = " ',
+        'type="RichString" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    return None
 
 
-def function_cyl_co(script='TEMP3D_default.mlx', r_func='r', theta_func='theta', z_func='z',
-                    current_layer=None, last_layer=None):
+def function_cyl_co(script, r_func='r', theta_func='theta', z_func='z'):
     """Geometric function using cylindrical coordinates.
 
-    See "function" documentation for usage.
+    Define functions in Z up cylindrical coordinates, with radius 'r',
+    angle 'theta', and height 'z'
 
+    See "function" docs for additional usage info and accepted parameters.
+
+    Args:
+        r_func (str): function to generate new coordinates for radius
+        theta_func (str): function to generate new coordinates for angle.
+            0 degrees is on the +X axis.
+        z_func (str): function to generate new coordinates for height
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
-    # atan2(y,x)
-    # TODO: replace with built-in muparser function when MeshLab is updated
-    #atan2 = 'if(x>0, atan(y/x), if((x<0) and (y>=0), atan(y/x)+%s, if((x<0) and (y<0), atan(y/x)-%s, if((x==0) and (y>0), %s/2, if((x==0) and (y<0), -%s/2, 0)))))' % (math.pi, math.pi, math.pi, math.pi)
 
     r = 'sqrt(x^2+y^2)'
-    theta = mp_atan2('y', 'x')
+    # In newer MeshLab atan2 is builtin to muparser
+    if isinstance(script, FilterScript) and script.ml_version >= '2016.12':
+        theta = 'atan2(y, x)'
+    else:
+        theta = mp_atan2('y', 'x')
 
     # Use re matching to match whole word; this prevents matching
     # 'sqrt' and 'rint' when replacing 'r'
@@ -454,12 +435,11 @@ def function_cyl_co(script='TEMP3D_default.mlx', r_func='r', theta_func='theta',
     y_func = '(r)*sin(theta)'.replace('r', r_func).replace('theta', theta_func)
 
     function(script, x_func, y_func, z_func)
-    return current_layer, last_layer
+    return None
 
 
-def radial_flare2(script='TEMP3D_default.mlx', flare_radius=None,
-                  start_radius=None, end_radius=None, end_height=None,
-                  current_layer=None, last_layer=None):
+def radial_flare2(script, flare_radius=None, start_radius=None, end_radius=None,
+                  end_height=None):
     """
     flare_radius must be >= end_height (height)
     end_radius max = flare_radius + r
@@ -487,11 +467,10 @@ def radial_flare2(script='TEMP3D_default.mlx', flare_radius=None,
     r_func = 'if(z>0, (r) + (flare_radius) - (flare_radius)*sqrt(1-z^2/(flare_radius)^2), (r))'.replace('flare_radius', str(flare_radius))
     #r_func = 'if(z>0, (r) + (flare_radius) - (flare_radius)*sqrt(1-z^2/(flare_radius)^2), (r))'.replace('flare_radius', str(flare_radius)).replace('start_radius', str(start_radius)).replace('end_radius', str(end_radius)).replace('end_height', str(end_height))
     function_cyl_co(script, r_func)
-    return current_layer, last_layer
+    return None
 
-def radial_flare(script='TEMP3D_default.mlx', flare_radius=None,
-                 start_radius=None, end_radius=None, end_height=None,
-                 current_layer=None, last_layer=None):
+def radial_flare(script, flare_radius=None, start_radius=None, end_radius=None,
+                 end_height=None):
     """
     flare_radius must be >= z2 (height)
     r2 max = flare_radius + r
@@ -515,11 +494,10 @@ def radial_flare(script='TEMP3D_default.mlx', flare_radius=None,
     z_func = z_func.replace('effective_radius', str(effective_radius)).replace('start_radius', str(start_radius)).replace('flare_radius', str(flare_radius))
     
     function_cyl_co(script=script, r_func=r_func, z_func=z_func)
-    return current_layer, last_layer
+    return None
 
-def curl_rim(script='TEMP3D_default.mlx', curl_radius=None,
-                 start_radius=None, end_radius=None, end_height=None,
-                 current_layer=None, last_layer=None):
+def curl_rim(script, curl_radius=None, start_radius=None, end_radius=None,
+             end_height=None):
     """
     flare_radius must be >= z2 (height)
     r2 max = flare_radius + r
@@ -543,12 +521,10 @@ def curl_rim(script='TEMP3D_default.mlx', curl_radius=None,
     z_func = z_func.replace('effective_radius', str(effective_radius)).replace('start_radius', str(start_radius)).replace('curl_radius', str(curl_radius))
     
     function_cyl_co(script=script, r_func=r_func, z_func=z_func)
-    return current_layer, last_layer
+    return None
 
-def wrap2cylinder(script='TEMP3D_default.mlx',
-                  radius=1, pitch=0, taper=0,
-                  pitch_func=None, taper_func=None,
-                  current_layer=None, last_layer=None):
+def wrap2cylinder(script, radius=1, pitch=0, taper=0, pitch_func=None,
+                  taper_func=None):
     """Deform mesh around cylinder of radius and axis z
 
     y = 0 will be on the surface of radius "radius"
@@ -563,14 +539,14 @@ def wrap2cylinder(script='TEMP3D_default.mlx',
         pitch_func = '-(pitch)*x/(2*pi*(radius))'
     pitch_func = pitch_func.replace(
         'pitch', str(pitch)).replace(
-        'pi', str(math.pi)).replace(
-        'radius', str(radius))
+            'pi', str(math.pi)).replace(
+                'radius', str(radius))
     if taper_func is None:
         taper_func = '-(taper)*(pitch_func)'
     taper_func = taper_func.replace(
         'taper', str(taper)).replace(
-        'pitch_func', str(pitch_func)).replace(
-        'pi', str(math.pi))
+            'pitch_func', str(pitch_func)).replace(
+                'pi', str(math.pi))
 
     x_func = '(y+(radius)+(taper_func))*sin(x/(radius))'.replace(
         'radius', str(radius)).replace('taper_func', str(taper_func))
@@ -579,11 +555,10 @@ def wrap2cylinder(script='TEMP3D_default.mlx',
     z_func = 'z+(pitch_func)'.replace('pitch_func', str(pitch_func))
 
     function(script, x_func, y_func, z_func)
-    return current_layer, last_layer
+    return None
 
 
-def wrap2sphere(script='TEMP3D_default.mlx', radius=1,
-                current_layer=None, last_layer=None):
+def wrap2sphere(script, radius=1):
     """
     """
     #r = 'sqrt(x^2+y^2)'
@@ -595,11 +570,10 @@ def wrap2sphere(script='TEMP3D_default.mlx', radius=1,
     #z_func='sqrt(radius-x^2-y^2)-radius+z'.replace('radius', str(radius))
     # z_func='sqrt(%s-x^2-y^2)-%s+z' % (sphere_radius**2, sphere_radius))
     function_cyl_co(script=script, r_func=r_func, z_func=z_func)
-    return current_layer, last_layer
+    return None
 
 
-def emboss_sphere(script='TEMP3D_default.mlx', radius=1, radius_limit=None, angle=None,
-                  current_layer=None, last_layer=None):
+def emboss_sphere(script, radius=1, radius_limit=None, angle=None):
     """
 
     angle overrides radius_limit
@@ -622,12 +596,11 @@ def emboss_sphere(script='TEMP3D_default.mlx', radius=1, radius_limit=None, angl
     #z_func='sqrt(radius-x^2-y^2)-radius+z'.replace('radius', str(radius))
     # z_func='sqrt(%s-x^2-y^2)-%s+z' % (sphere_radius**2, sphere_radius))
     function(script=script, z_func=z_func)
-    return current_layer, last_layer
+    return None
 
 
-def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, taper=0, angle=0,
-         straght_start=True, straght_end=False, radius_limit=None, outside_limit_end=True,
-         current_layer=None, last_layer=None):
+def bend(script, radius=1, pitch=0, taper=0, angle=0, straght_start=True,
+         straght_end=False, radius_limit=None, outside_limit_end=True):
     """Bends mesh around cylinder of radius radius and axis z to a certain angle
 
     straight_ends: Only apply twist (pitch) over the area that is bent
@@ -647,12 +620,12 @@ def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, taper=0, angle=0,
                         % (radius, angle, radius, angle, radius, radius, radius, angle/2, radius, angle/2, angle/2),"""
     pitch_func = '-(pitch)*x/(2*pi*(radius))'.replace(
         'pitch', str(pitch)).replace(
-        'pi', str(math.pi)).replace(
-        'radius', str(radius))
+            'pi', str(math.pi)).replace(
+                'radius', str(radius))
     taper_func = '(taper)*(pitch_func)'.replace(
         'taper', str(taper)).replace(
-        'pitch_func', str(pitch_func)).replace(
-        'pi', str(math.pi))
+            'pitch_func', str(pitch_func)).replace(
+                'pi', str(math.pi))
     # y<radius_limit
 
     if outside_limit_end:
@@ -664,10 +637,10 @@ def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, taper=0, angle=0,
         # x_func = 'if(x<segment, if(x>0, (y+radius)*sin(x/radius), x),
         # (y+radius)*sin(angle)-segment)'.replace(
         'segment', str(segment)).replace(
-        'radius_limit', str(radius_limit)).replace(
-        'radius', str(radius)).replace(
-        'taper_func', str(taper_func)).replace(
-        'angle', str(angle))
+            'radius_limit', str(radius_limit)).replace(
+                'radius', str(radius)).replace(
+                    'taper_func', str(taper_func)).replace(
+                        'angle', str(angle))
 
     if outside_limit_end:
         y_func = 'if(x<(segment) and y<(radius_limit), if(x>0, (y+(radius)+(taper_func))*cos(x/(radius))-(radius), y), (y+(radius)+(taper_func))*cos(angle)-(x-(segment))*sin(angle)-(radius))'
@@ -676,10 +649,10 @@ def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, taper=0, angle=0,
 
     y_func = y_func.replace(
         'segment', str(segment)).replace(
-        'radius_limit', str(radius_limit)).replace(
-        'radius', str(radius)).replace(
-        'taper_func', str(taper_func)).replace(
-        'angle', str(angle))
+            'radius_limit', str(radius_limit)).replace(
+                'radius', str(radius)).replace(
+                    'taper_func', str(taper_func)).replace(
+                        'angle', str(angle))
 
     if straght_start:
         start = 'z'
@@ -696,14 +669,14 @@ def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, taper=0, angle=0,
         z_func = 'if(x<(segment), if(x>0 and y<(radius_limit), z+(pitch_func), (start)), if(y<(radius_limit), (end), z))'
     z_func = z_func.replace(
         'start', str(start)).replace(
-        'end', str(end)).replace(
-        'segment', str(segment)).replace(
-        'radius_limit', str(radius_limit)).replace(
-        'radius', str(radius)).replace(
-        'angle', str(angle)).replace(
-        'pitch_func', str(pitch_func)).replace(
-        'pitch', str(pitch)).replace(
-        'pi', str(math.pi))
+            'end', str(end)).replace(
+                'segment', str(segment)).replace(
+                    'radius_limit', str(radius_limit)).replace(
+                        'radius', str(radius)).replace(
+                            'angle', str(angle)).replace(
+                                'pitch_func', str(pitch_func)).replace(
+                                    'pitch', str(pitch)).replace(
+                                        'pi', str(math.pi))
 
     """
     if straight_ends:
@@ -741,7 +714,7 @@ def bend(script='TEMP3D_default.mlx', radius=1, pitch=0, taper=0, angle=0,
         z_func = 'z-%s*x/(2*%s*%s)' % (pitch, math.pi, radius)
     """
     function(script, x_func=x_func, y_func=y_func, z_func=z_func)
-    return current_layer, last_layer
+    return None
 
 
 # TODO: add function to round mesh to desired tolerance

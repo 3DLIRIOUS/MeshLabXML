@@ -1,12 +1,9 @@
 """ MeshLabXML texture functions """
 
-import math
-
 from . import util
 
 
-def flat_plane(script='TEMP3D_default.mlx', plane=0, aspect_ratio=False,
-               current_layer=None, last_layer=None):
+def flat_plane(script, plane=0, aspect_ratio=False):
     """Flat plane parameterization
 
     """
@@ -34,12 +31,10 @@ def flat_plane(script='TEMP3D_default.mlx', plane=0, aspect_ratio=False,
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def per_triangle(script='TEMP3D_default.mlx',
-                 sidedim=0, textdim=1024, border=2, method=1,
-                 current_layer=None, last_layer=None):
+def per_triangle(script, sidedim=0, textdim=1024, border=2, method=1):
     """Trivial Per-Triangle parameterization
 
     """
@@ -82,12 +77,10 @@ def per_triangle(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def voronoi(script='TEMP3D_default.mlx',
-            region_num=10, overlap=False,
-            current_layer=None, last_layer=None):
+def voronoi(script, region_num=10, overlap=False):
     """Voronoi Atlas parameterization
 
     """
@@ -111,13 +104,11 @@ def voronoi(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def isometric(script='TEMP3D_default.mlx',
-              targetAbstractMinFaceNum=140, targetAbstractMaxFaceNum=180,
-              stopCriteria=1, convergenceSpeed=1, DoubleStep=True,
-              current_layer=None, last_layer=None):
+def isometric(script, targetAbstractMinFaceNum=140, targetAbstractMaxFaceNum=180,
+              stopCriteria=1, convergenceSpeed=1, DoubleStep=True):
     """Isometric parameterization
 
     """
@@ -170,12 +161,10 @@ def isometric(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def isometric_build_atlased_mesh(script='TEMP3D_default.mlx',
-                                 BorderSize=0.1,
-                                 current_layer=None, last_layer=None):
+def isometric_build_atlased_mesh(script, BorderSize=0.1):
     """Isometric parameterization: Build Atlased Mesh
 
     This actually generates the UV mapping from the isometric parameterization
@@ -195,12 +184,10 @@ def isometric_build_atlased_mesh(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def isometric_save(script='TEMP3D_default.mlx',
-                   AbsName="TEMP3D.abs",
-                   current_layer=None, last_layer=None):
+def isometric_save(script, AbsName="TEMP3D.abs"):
     """Isometric parameterization: Save Abstract Domain
 
     """
@@ -216,12 +203,10 @@ def isometric_save(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def isometric_load(script='TEMP3D_default.mlx',
-                   AbsName="TEMP3D.abs",
-                   current_layer=None, last_layer=None):
+def isometric_load(script, AbsName="TEMP3D.abs"):
     """Isometric parameterization: Load Abstract Domain
 
     """
@@ -237,12 +222,10 @@ def isometric_load(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def isometric_transfer(script='TEMP3D_default.mlx',
-                       sourceMesh=0, targetMesh=1,
-                       current_layer=None, last_layer=None):
+def isometric_transfer(script, sourceMesh=0, targetMesh=1):
     """Isometric parameterization: transfer between meshes
 
     Provide the layer numbers of the source and target meshes.
@@ -268,12 +251,10 @@ def isometric_transfer(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def isometric_remesh(script='TEMP3D_default.mlx',
-                     SamplingRate=10,
-                     current_layer=None, last_layer=None):
+def isometric_remesh(script, SamplingRate=10):
     """Isometric parameterization: remeshing
 
     """
@@ -289,12 +270,10 @@ def isometric_remesh(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def set_texture(script='TEMP3D_default.mlx',
-                textName="TEMP3D.png", textDim=1024,
-                current_layer=None, last_layer=None):
+def set_texture(script, textName="TEMP3D.png", textDim=1024):
     """Set texture
 
     """
@@ -318,15 +297,13 @@ def set_texture(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def project_rasters(script='TEMP3D_default.mlx',
-                    tex_file_out="TEMP3D.png", tex_size=1024,
+def project_rasters(script, tex_file_out="TEMP3D.png", tex_size=1024,
                     fill_atlas_gaps=False, depth_threshold=0.5,
                     selected=False, use_angle=True, use_distance=True,
-                    use_borders=True, use_silhouettes=True, use_alpha=False,
-                    current_layer=None, last_layer=None):
+                    use_borders=True, use_silhouettes=True, use_alpha=False):
     """Set texture
 
     Creates new texture file
@@ -418,16 +395,14 @@ def project_rasters(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def param_texture_from_rasters(script='TEMP3D_default.mlx',
-                               textName="TEMP3D.png", texsize=1024,
+def param_texture_from_rasters(script, textName="TEMP3D.png", texsize=1024,
                                colorCorrection=True, colorCorrectionFilterSize=1,
                                useDistanceWeight=True, useImgBorderWeight=True,
                                useAlphaWeight=False, cleanIsolatedTriangles=True,
-                               stretchingAllowed=False, textureGutter=4,
-                               current_layer=None, last_layer=None):
+                               stretchingAllowed=False, textureGutter=4):
     """Set texture
 
     """
@@ -515,14 +490,12 @@ def param_texture_from_rasters(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def param_from_rasters(script='TEMP3D_default.mlx',
-                       useDistanceWeight=True, useImgBorderWeight=True,
+def param_from_rasters(script, useDistanceWeight=True, useImgBorderWeight=True,
                        useAlphaWeight=False, cleanIsolatedTriangles=True,
-                       stretchingAllowed=False, textureGutter=4,
-                       current_layer=None, last_layer=None):
+                       stretchingAllowed=False, textureGutter=4):
     """Set texture
 
     """
@@ -578,4 +551,4 @@ def param_from_rasters(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return

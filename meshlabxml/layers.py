@@ -1,5 +1,7 @@
 """ MeshLabXML layer functions """
 
+#from . import mlx.FilterScript
+#from meshlabxml import mlx.FilterScript
 import meshlabxml as mlx
 from . import util
 
@@ -11,7 +13,7 @@ def join(script, merge_visible=True, merge_vert=False, delete_layer=True,
     deleted.
 
     Args:
-        script: the FilterScript object or script filename to write
+        script: the mlx.FilterScript object or script filename to write
             the filter to.
         merge_visible (bool): merge only visible layers
         merge_vert (bool): merge the vertices that are duplicated among
@@ -62,6 +64,7 @@ def join(script, merge_visible=True, merge_vert=False, delete_layer=True,
         'type="RichBool" ',
         '/>\n',
         '  </filter>\n'])
+    util.write_filter(script, filter_xml)
     if isinstance(script, mlx.FilterScript):
         script.add_layer('Merged Mesh')
         if delete_layer:
@@ -70,8 +73,6 @@ def join(script, merge_visible=True, merge_vert=False, delete_layer=True,
             # visibility is tracked.
             for i in range(script.last_layer()):
                 delete(script, 0)
-    else:
-        util._write_filter(script, filter_xml)
     return None
 
 
@@ -79,7 +80,7 @@ def delete(script, layer_num=None):
     """ Delete layer
 
     Args:
-        script: the FilterScript object or script filename to write
+        script: the mlx.FilterScript object or script filename to write
             the filter to.
         layer_num (int): the number of the layer to delete. Default is the
             current layer. Not supported on the file base API.
@@ -95,19 +96,19 @@ def delete(script, layer_num=None):
     filter_xml = '  <filter name="Delete Current Mesh"/>\n'
     if isinstance(script, mlx.FilterScript):
         if (layer_num is None) or (layer_num == script.current_layer()):
-            util._write_filter(script, filter_xml)
+            util.write_filter(script, filter_xml)
             script.del_layer(script.current_layer())
         else:
             cur_layer = script.current_layer()
             change(script, layer_num)
-            util._write_filter(script, filter_xml)
+            util.write_filter(script, filter_xml)
             if layer_num < script.current_layer():
                 change(script, cur_layer - 1)
             else:
                 change(script, cur_layer)
             script.del_layer(layer_num)
     else:
-        util._write_filter(script, filter_xml)
+        util.write_filter(script, filter_xml)
     return None
 
 
@@ -118,7 +119,7 @@ def rename(script, label='blank', layer_num=None):
     the labels.
 
     Args:
-        script: the FilterScript object or script filename to write
+        script: the mlx.FilterScript object or script filename to write
             the filter to.
         label (str): new label for the mesh layer
         layer_num (int): layer number to rename. Default is the
@@ -141,16 +142,16 @@ def rename(script, label='blank', layer_num=None):
         '  </filter>\n'])
     if isinstance(script, mlx.FilterScript):
         if (layer_num is None) or (layer_num == script.current_layer()):
-            util._write_filter(script, filter_xml)
+            util.write_filter(script, filter_xml)
             script.layer_stack[script.current_layer()] = label
         else:
             cur_layer = script.current_layer()
             change(script, layer_num)
-            util._write_filter(script, filter_xml)
+            util.write_filter(script, filter_xml)
             change(script, cur_layer)
             script.layer_stack[layer_num] = label
     else:
-        util._write_filter(script, filter_xml)
+        util.write_filter(script, filter_xml)
     return None
 
 
@@ -158,10 +159,10 @@ def change(script, layer_num=None):
     """ Change the current layer by specifying the new layer number.
 
     Args:
-        script: the FilterScript object or script filename to write
+        script: the mlx.FilterScript object or script filename to write
             the filter to.
         layer_num (int): the number of the layer to change to. Default is the
-            last layer if script is a FilterScript object; if script is a
+            last layer if script is a mlx.FilterScript object; if script is a
             filename the default is the first layer.
 
     Layer stack:
@@ -184,7 +185,7 @@ def change(script, layer_num=None):
         'type="RichMesh" ',
         '/>\n',
         '  </filter>\n'])
-    util._write_filter(script, filter_xml)
+    util.write_filter(script, filter_xml)
     if isinstance(script, mlx.FilterScript):
         script.set_current_layer(layer_num)
         #script.layer_stack[len(self.layer_stack) - 1] = layer_num
@@ -197,7 +198,7 @@ def duplicate(script, layer_num=None):
     New layer label is '*_copy'.
 
     Args:
-        script: the FilterScript object or script filename to write
+        script: the mlx.FilterScript object or script filename to write
             the filter to.
         layer_num (int): layer number to duplicate. Default is the
             current layer. Not supported on the file base API.
@@ -213,14 +214,14 @@ def duplicate(script, layer_num=None):
     filter_xml = '  <filter name="Duplicate Current layer"/>\n'
     if isinstance(script, mlx.FilterScript):
         if (layer_num is None) or (layer_num == script.current_layer()):
-            util._write_filter(script, filter_xml)
+            util.write_filter(script, filter_xml)
             script.add_layer('{}_copy'.format(script.layer_stack[script.current_layer()]), True)
         else:
             change(script, layer_num)
-            util._write_filter(script, filter_xml)
+            util.write_filter(script, filter_xml)
             script.add_layer('{}_copy'.format(script.layer_stack[layer_num]), True)
     else:
-        util._write_filter(script, filter_xml)
+        util.write_filter(script, filter_xml)
     return None
 
 
@@ -232,7 +233,7 @@ def split_parts(script, part_num=None, layer_num=None):
     and the smallest part is the highest numbered "CC" layer.
 
     Args:
-        script: the FilterScript object or script filename to write
+        script: the mlx.FilterScript object or script filename to write
             the filter to.
         part_num (int): the number of parts in the model. This is needed in
             order to properly create and manage the layer stack. Can be found
@@ -256,7 +257,7 @@ def split_parts(script, part_num=None, layer_num=None):
     if isinstance(script, mlx.FilterScript):
         if (layer_num is not None) and (layer_num != script.current_layer()):
             change(script, layer_num)
-        util._write_filter(script, filter_xml)
+        util.write_filter(script, filter_xml)
         if part_num is not None:
             for i in range(part_num):
                 script.add_layer('CC {}'.format(i), True)
@@ -266,5 +267,5 @@ def split_parts(script, part_num=None, layer_num=None):
                   'be determined automatically. The layer stack is likely',
                   'incorrect!')
     else:
-        util._write_filter(script, filter_xml)
+        util.write_filter(script, filter_xml)
     return None

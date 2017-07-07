@@ -1,234 +1,279 @@
 """ MeshLabXML remeshing functions """
 
-import meshlabxml as mlx
+#import meshlabxml as mlx
+from . import FilterScript
 from . import util
 
+def simplify(script, texture=True, faces=25000, target_perc=0.0,
+             quality_thr=0.3, preserve_boundary=False, boundary_weight=1.0,
+             optimal_placement=True, preserve_normal=False,
+             planar_quadric=False, selected=False, extra_tex_coord_weight=1.0,
+             preserve_topology=True, quality_weight=False, autoclean=True):
+    """ Simplify a mesh using a Quadric based Edge Collapse Strategy, better
+        than clustering but slower. Optionally tries to preserve UV
+        parametrization for textured meshes.
 
-def simplify(script='TEMP3D_default.mlx', texture=True, faces=25000,
-             target_perc=0.0, quality_thr=0.3, preserve_boundary=False,
-             boundary_weight=1.0, preserve_normal=False,
-             optimal_placement=True, planar_quadric=False,
-             selected=False, extra_tex_coord_weight=1.0,
-             preserve_topology=True, quality_weight=False,
-             autoclean=True):
-    # TIP: measure topology fist to find number of faces and area
-    script_file = open(script, 'a')
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        texture (bool):
+        faces (int): The desired final number of faces
+        target_perc (float): If non zero, this parameter specifies the desired
+            final size of the mesh as a percentage of the initial mesh size.
+        quality_thr (float): Quality threshold for penalizing bad shaped faces.
+            The value is in the range [0..1]0 accept any kind of face (no
+            penalties), 0.5 penalize faces with quality less than 0.5,
+            proportionally to their shape.
+        preserve_boundary (bool): The simplification process tries not to
+            affect mesh boundaries
+        boundary_weight (float): The importance of the boundary during
+            simplification. Default (1.0) means that the boundary has the same
+            importance of the rest. Values greater than 1.0 raise boundary
+            importance and has the effect of removing less vertices on the
+            border. Admitted range of values (0,+inf).
+        optimal_placement (bool): Each collapsed vertex is placed in the
+            position minimizing the quadric error. It can fail (creating bad
+            spikes) in case of very flat areas. If disabled edges are collapsed
+            onto one of the two original vertices and the final mesh is
+            composed by a subset of the original vertices.
+        preserve_normal (bool): Try to avoid face flipping effects and try to
+            preserve the original orientation of the surface.
+        planar_quadric (bool): Add additional simplification constraints that
+            improves the quality of the simplification of the planar portion of
+            the mesh.
+        selected (bool): The simplification is applied only to the selected set
+            of faces. Take care of the target number of faces!
+        extra_tex_coord_weight (float): Additional weight for each extra
+            Texture Coordinates for every (selected) vertex. Ignored if texture
+            is False.
+        preserve_topology (bool): Avoid all the collapses that should cause a
+            topology change in the mesh (like closing holes, squeezing handles,
+            etc). If checked the genus of the mesh should stay unchanged.
+        quality_weight (bool): Use the Per-Vertex quality as a weighting factor
+            for the simplification. The weight is used as a error amplification
+            value, so a vertex with a high quality value will not be simplified
+            and a portion of the mesh with low quality values will be
+            aggressively simplified.
+        autoclean (bool): After the simplification an additional set of steps
+            is performed to clean the mesh (unreferenced vertices, bad faces,
+            etc).
 
+    Layer stack:
+        Unchanged; current mesh is simplified in place.
+
+    MeshLab versions:
+        2016.12 (different filter name)
+        1.3.4BETA
+    """
     if texture:
-        script_file.write('  <filter name="Quadric Edge Collapse Decimation ' +
-                          '(with texture)">\n')
+        if isinstance(script, FilterScript) and (script.ml_version == '2016.12'):
+            filter_xml = '  <filter name="Simplification: Quadric Edge Collapse Decimation (with texture)">\n'
+        else:
+            filter_xml = '  <filter name="Quadric Edge Collapse Decimation (with texture)">\n'
     else:
-        script_file.write(
-            '  <filter name="Quadric Edge Collapse Decimation">\n')
-
+        if isinstance(script, FilterScript) and (script.ml_version == '2016.12'):
+            filter_xml = '  <filter name="Simplification: Quadric Edge Collapse Decimation">\n'
+        else:
+            filter_xml = '  <filter name="Quadric Edge Collapse Decimation">\n'
     # Parameters common to both 'with' and 'without texture'
-    script_file.write('    <Param name="TargetFaceNum" ' +
-                      'value="%d" ' % faces +
-                      'description="Target number of faces" ' +
-                      'type="RichInt" ' +
-                      'tooltip="The desired final number of faces"/>\n' +
-
-                      '    <Param name="TargetPerc" ' +
-                      'value="%s" ' % target_perc +
-                      'description="Percentage reduction (0..1)" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="If non zero, this parameter specifies the desired' +
-                      ' final size of the mesh as a percentage of the initial' +
-                      ' mesh size."/>\n' +
-
-                      '    <Param name="QualityThr" ' +
-                      'value="%s" ' % quality_thr +
-                      'description="Quality threshold" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Quality threshold for penalizing bad shaped faces.' +
-                      ' The value is in the range [0..1]' +
-                      ' 0 accept any kind of face (no penalties),' +
-                      ' 0.5 penalize faces with quality less than 0.5,' +
-                      ' proportionally to their shape."/>\n' +
-
-                      '    <Param name="PreserveBoundary" ' +
-                      'value="%s" ' % str(preserve_boundary).lower() +
-                      'description="Preserve Boundary of the mesh" ' +
-                      'type="RichBool" ' +
-                      'tooltip="The simplification process tries not to affect mesh' +
-                      ' boundaries"/>\n' +
-
-                      '    <Param name="BoundaryWeight" ' +
-                      'value="%s" ' % boundary_weight +
-                      'description="Boundary Preserving Weight" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="The importance of the boundary during simplification.' +
-                      ' Default (1.0) means that the boundary has the same importance' +
-                      ' of the rest. Values greater than 1.0 raise boundary importance' +
-                      ' and has the effect of removing less vertices on the border.' +
-                      ' Admitted range of values (0,+inf)."/>\n' +
-
-                      '    <Param name="OptimalPlacement" ' +
-                      'value="%s" ' % str(optimal_placement).lower() +
-                      'description="Optimal position of simplified vertices" ' +
-                      'type="RichBool" ' +
-                      'tooltip="Each collapsed vertex is placed in the position' +
-                      ' minimizing the quadric error. It can fail (creating bad' +
-                      ' spikes) in case of very flat areas. If disabled edges' +
-                      ' are collapsed onto one of the two original vertices and' +
-                      ' the final mesh is composed by a subset of the original' +
-                      ' vertices."/>\n' +
-
-                      '    <Param name="PreserveNormal" ' +
-                      'value="%s" ' % str(preserve_normal).lower() +
-                      'description="Preserve Normal" ' +
-                      'type="RichBool" ' +
-                      'tooltip="Try to avoid face flipping effects and try to' +
-                      ' preserve the original orientation of the surface"/>\n' +
-
-                      '    <Param name="PlanarQuadric" ' +
-                      'value="%s" ' % str(planar_quadric).lower() +
-                      'description="Planar Simplification" ' +
-                      'type="RichBool" ' +
-                      'tooltip="Add additional simplification constraints that' +
-                      ' improves the quality of the simplification of the planar' +
-                      ' portion of the mesh."/>\n' +
-
-                      '    <Param name="Selected" ' +
-                      'value="%s" ' % str(selected).lower() +
-                      'description="Simplify only selected faces" ' +
-                      'type="RichBool" ' +
-                      'tooltip="The simplification is applied only to the selected' +
-                      ' set of faces. Take care of the target number of faces!"/>\n')
-
+    filter_xml = ''.join([
+        filter_xml,
+        '    <Param name="TargetFaceNum" ',
+        'value="{:d}" '.format(faces),
+        'description="Target number of faces" ',
+        'type="RichInt" ',
+        '/>\n',
+        '    <Param name="TargetPerc" ',
+        'value="{}" '.format(target_perc),
+        'description="Percentage reduction (0..1)" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="QualityThr" ',
+        'value="{}" '.format(quality_thr),
+        'description="Quality threshold" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="PreserveBoundary" ',
+        'value="{}" '.format(str(preserve_boundary).lower()),
+        'description="Preserve Boundary of the mesh" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="BoundaryWeight" ',
+        'value="{}" '.format(boundary_weight),
+        'description="Boundary Preserving Weight" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="OptimalPlacement" ',
+        'value="{}" '.format(str(optimal_placement).lower()),
+        'description="Optimal position of simplified vertices" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="PreserveNormal" ',
+        'value="{}" '.format(str(preserve_normal).lower()),
+        'description="Preserve Normal" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="PlanarQuadric" ',
+        'value="{}" '.format(str(planar_quadric).lower()),
+        'description="Planar Simplification" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="Selected" ',
+        'value="{}" '.format(str(selected).lower()),
+        'description="Simplify only selected faces" ',
+        'type="RichBool" ',
+        '/>\n'])
     if texture:  # Parameters unique to 'with texture'
-        script_file.write('    <Param name="Extratcoordw" ' +
-                          'value="%s" ' % extra_tex_coord_weight +
-                          'description="Texture Weight" ' +
-                          'type="RichFloat" ' +
-                          'tooltip="Additional weight for each extra Texture' +
-                          ' Coordinates for every (selected) vertex"/>\n')
-
+        filter_xml = ''.join([
+            filter_xml,
+            '    <Param name="Extratcoordw" ',
+            'value="{}" '.format(extra_tex_coord_weight),
+            'description="Texture Weight" ',
+            'type="RichFloat" ',
+            '/>\n'])
     else:  # Parameters unique to 'without texture'
-        script_file.write('    <Param name="PreserveTopology" ' +
-                          'value="%s" ' % str(preserve_topology).lower() +
-                          'description="Preserve Topology" ' +
-                          'type="RichBool" ' +
-                          'tooltip="Avoid all the collapses that should cause a' +
-                          ' topology change in the mesh (like closing holes,' +
-                          ' squeezing handles, etc). If checked the genus of the' +
-                          ' mesh should stay unchanged."/>\n' +
-
-                          '    <Param name="QualityWeight" ' +
-                          'value="%s" ' % str(quality_weight).lower() +
-                          'description="Weighted Simplification" ' +
-                          'type="RichBool" ' +
-                          'tooltip="Use the Per-Vertex quality as a weighting factor' +
-                          ' for the simplification. The weight is used as a error' +
-                          ' amplification value, so a vertex with a high quality' +
-                          ' value will not be simplified and a portion of the mesh' +
-                          ' with low quality values will be aggressively' +
-                          ' simplified."/>\n' +
-
-                          '    <Param name="AutoClean" ' +
-                          'value="%s" ' % str(autoclean).lower() +
-                          'description="Post-simplification cleaning" ' +
-                          'type="RichBool" ' +
-                          'tooltip="After the simplification an additional set of' +
-                          ' steps is performed to clean the mesh (unreferenced' +
-                          ' vertices, bad faces, etc)/>\n')
-
-    script_file.write('  </filter>\n')
-    script_file.close()
+        filter_xml = ''.join([
+            filter_xml,
+            '    <Param name="PreserveTopology" ',
+            'value="{}" '.format(str(preserve_topology).lower()),
+            'description="Preserve Topology" ',
+            'type="RichBool" ',
+            '/>\n',
+            '    <Param name="QualityWeight" ',
+            'value="{}" '.format(str(quality_weight).lower()),
+            'description="Weighted Simplification" ',
+            'type="RichBool" ',
+            '/>\n',
+            '    <Param name="AutoClean" ',
+            'value="{}" '.format(str(autoclean).lower()),
+            'description="Post-simplification cleaning" ',
+            'type="RichBool" ',
+            '/>\n'])
+    filter_xml = ''.join([filter_xml, '  </filter>\n'])
+    util.write_filter(script, filter_xml)
     return None
 
 
-def uniform_resampling(script='TEMP3D_default.mlx', voxel=1.0,
-                       offset=0.0, merge_vert=True, discretize=False,
-                       multisample=False, thicken=False):
+def uniform_resampling(script, voxel=1.0, offset=0.0, merge_vert=True,
+                       discretize=False, multisample=False, thicken=False):
+    """ Create a new mesh that is a resampled version of the current one.
 
-    # If you prefer to use a precision (as a percentage of AABB[diag])
-    # instead of the voxel cell size include the following code in the parent
-    # and pass voxel:
-    #   precision=1 # 1% of AABB[diag]
-    #   voxel=$(bc <<< "(${AABB[diag]} * 0.01 * $precision)")
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Uniform Mesh Resampling">\n' +
+    The resampling is done by building a uniform volumetric representation
+    where each voxel contains the signed distance from the original surface.
+    The resampled surface is reconstructed using the marching cube algorithm
+    over this volume.
 
-                      '    <Param name="CellSize" ' +
-                      'value="%s" ' % voxel +
-                      'description="Precision" ' +
-                      'min="0" ' +
-                      'max="100" ' +
-                      'type="RichAbsPerc" ' +
-                      'tooltip="Voxel (cell) size for resampling. Smaller cells give' +
-                      ' better precision at a higher computational cost. Remember' +
-                      ' that halving the cell size means that you build a volume 8' +
-                      ' times larger."/>\n' +
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        voxel (float): voxel (cell) size for resampling. Smaller cells give
+            better precision at a higher computational cost. Remember that
+            halving the cell size means that you build a volume 8 times larger.
+        offset (float): offset amount of the created surface (i.e. distance of
+            the created surface from the original one). If offset is zero, the
+            created surface passes on the original mesh itself. Values greater
+            than zero mean an external surface (offset), and lower than zero
+            mean an internal surface (inset). In practice this value is the
+            threshold passed to the Marching Cube algorithm to extract the
+            isosurface from the distance field representation.
+        merge_vert (bool): if True the mesh generated by MC will be cleaned by
+            unifying vertices that are almost coincident.
+        discretize (bool): if True the position of the intersected edge of the
+            marching cube grid is not computed by linear interpolation, but it
+            is placed in fixed middle position. As a consequence the resampled
+            object will look severely aliased by a stairstep appearance. Useful
+            only for simulating the output of 3D printing devices.
+        multisample (bool): if True the distance field is more accurately
+            compute by multisampling the volume (7 sample for each voxel). Much
+            slower but less artifacts.
+        thicken (bool): if True, you have to choose a non zero Offset and a
+            double surface is built around the original surface, inside and
+            outside. Is useful to convert thin floating surfaces into solid,
+            thick meshes.
 
-                      '    <Param name="Offset" ' +
-                      'value="%s" ' % offset +
-                      'description="Offset" ' +
-                      'min="-100" ' +
-                      'max="100" ' +
-                      'type="RichAbsPerc" ' +
-                      'tooltip=" Offset amount of the created surface (i.e. distance' +
-                      ' of the created surface from the original one). If offset is' +
-                      ' zero, the created surface passes on the original mesh' +
-                      ' itself. Values greater than zero mean an external surface' +
-                      ' (offset), and lower than zero mean an internal surface' +
-                      ' (inset). In practice this value is the threshold passed to' +
-                      ' the Marching Cube algorithm to extract the isosurface from' +
-                      ' the distance field representation."/>\n' +
+    Layer stack:
+        Creates 1 new layer 'Offset mesh'
+        Current layer is changed to new layer
 
-                      '    <Param name="mergeCloseVert" ' +
-                      'value="%s" ' % str(merge_vert).lower() +
-                      'description="Clean Vertices" ' +
-                      'type="RichBool" ' +
-                      'tooltip="If true the mesh generated by MC will be cleaned by' +
-                      ' unifying vertices that are almost coincident"/>\n' +
-
-                      '    <Param name="discretize" ' +
-                      'value="%s" ' % str(discretize).lower() +
-                      'description="Discretize" ' +
-                      'type="RichBool" ' +
-                      'tooltip="If true the position of the intersected edge of the' +
-                      ' marching cube grid is not computed by linear interpolation,' +
-                      ' but it is placed in fixed middle position. As a consequence' +
-                      ' the resampled object will look severely aliased by a' +
-                      ' stairstep appearance. Useful only for simulating the output' +
-                      ' of 3D printing devices."/>\n' +
-
-                      '    <Param name="multisample" ' +
-                      'value="%s" ' % str(multisample).lower() +
-                      'description="Multisample" ' +
-                      'type="RichBool" ' +
-                      'tooltip="If true the distance field is more accurately' +
-                      ' compute by multisampling the volume (7 sample for each' +
-                      ' voxel). Much slower but less artifacts."/>\n' +
-
-                      '    <Param name="absDist" ' +
-                      'value="%s" ' % str(thicken).lower() +
-                      'description="Absolute Distance" ' +
-                      'type="RichBool" ' +
-                      'tooltip="If true, you have to choose a not zero Offset and a' +
-                      ' double surface is built around the original surface, inside' +
-                      ' and outside. Is useful to convert thin floating surfaces' +
-                      ' into solid, thick meshes."/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    filter_xml = ''.join([
+        '  <filter name="Uniform Mesh Resampling">\n',
+        '    <Param name="CellSize" ',
+        'value="{}" '.format(voxel),
+        'description="Precision" ',
+        'min="0" ',
+        'max="100" ',
+        'type="RichAbsPerc" ',
+        '/>\n',
+        '    <Param name="Offset" ',
+        'value="{}" '.format(offset),
+        'description="Offset" ',
+        'min="-100" ',
+        'max="100" ',
+        'type="RichAbsPerc" ',
+        '/>\n',
+        '    <Param name="mergeCloseVert" ',
+        'value="{}" '.format(str(merge_vert).lower()),
+        'description="Clean Vertices" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="discretize" ',
+        'value="{}" '.format(str(discretize).lower()),
+        'description="Discretize" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="multisample" ',
+        'value="{}" '.format(str(multisample).lower()),
+        'description="Multisample" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="absDist" ',
+        'value="{}" '.format(str(thicken).lower()),
+        'description="Absolute Distance" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Offset mesh')
     return None
 
 
-def hull(script='TEMP3D_default.mlx', reorient_normal=True):
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Convex Hull">\n' +
+def hull(script, reorient_normal=True):
+    """ Calculate the convex hull with Qhull library
+        http://www.qhull.org/html/qconvex.htm
 
-                      '    <Param name="reorient" ' +
-                      'value="%s" ' % str(reorient_normal).lower() +
-                      'description="Re-orient all faces coherentely" ' +
-                      'type="RichBool" ' +
-                      'tooltip="Re-orient all faces coherentely after hull' +
-                      ' operation."/>\n' +
+    The convex hull of a set of points is the boundary of the minimal convex
+    set containing the given non-empty finite set of points.
 
-                      '  </filter>\n')
-    script_file.close()
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        reorient_normal (bool): Re-orient all faces coherentely after hull
+            operation.
+
+    Layer stack:
+        Creates 1 new layer 'Convex Hull'
+        Current layer is changed to new layer
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    filter_xml = ''.join([
+        '  <filter name="Convex Hull">\n',
+        '    <Param name="reorient" ',
+        'value="{}" '.format(str(reorient_normal).lower()),
+        'description="Re-orient all faces coherentely" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Convex Hull')
     return None
 
 
@@ -294,15 +339,16 @@ def surface_poisson(script, octree_depth=10, solver_divide=8,
         'type="RichFloat" ',
         '/>\n',
         '  </filter>\n'])
-    util._write_filter(script, filter_xml)
-    if isinstance(script, mlx.FilterScript):
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
         script.add_layer('Poisson mesh', change_layer=True)
     return None
 
 
 def surface_poisson_screened(script, visible_layer=False, depth=8,
-    full_depth=5, cg_depth=0, scale=1.1, samples_per_node=1.5,
-    point_weight=4.0, iterations=8, confidence=False, pre_clean=False):
+                             full_depth=5, cg_depth=0, scale=1.1,
+                             samples_per_node=1.5, point_weight=4.0,
+                             iterations=8, confidence=False, pre_clean=False):
     """ This surface reconstruction algorithm creates watertight
         surfaces from oriented point sets.
 
@@ -377,7 +423,7 @@ def surface_poisson_screened(script, visible_layer=False, depth=8,
         '    <xmlparam name="scale" value="{}"/>\n'.format(scale),
         '    <xmlparam name="visibleLayer" value="{}"/>\n'.format(str(visible_layer).lower()),
         '  </xmlfilter>\n'])
-    util._write_filter(script, filter_xml)
-    if isinstance(script, mlx.FilterScript):
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
         script.add_layer('Poisson mesh', change_layer=False)
     return None

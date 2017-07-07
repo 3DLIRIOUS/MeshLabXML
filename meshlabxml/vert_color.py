@@ -3,16 +3,17 @@
 import math
 
 from . import util
+from .color_names import color_name
 
+def function(script, red=255, green=255, blue=255, alpha=255, color=None):
+    """Color function using muparser lib to generate new RGBA color for every
+        vertex
 
-def function(script='TEMP3D_default.mlx', red=255, green=255,
-             blue=255, alpha=255, color=None, current_layer=None,
-             last_layer=None):
-    """Color function using muparser lib to generate new RGBA color for every vertex
+    Red, Green, Blue and Alpha channels may be defined by specifying a function
+    for each.
 
     See help(mlx.muparser_ref) for muparser reference documentation.
 
-    Insert four functions; one for red, green, blue  and alpha channel respectively.
     It's possible to use the following per-vertex variables in the expression:
 
     Variables (per vertex):
@@ -20,7 +21,7 @@ def function(script='TEMP3D_default.mlx', red=255, green=255,
         nx, ny, nz (normal)
         r, g, b, a (color)
         q (quality)
-        rad
+        rad (radius)
         vi (vertex index)
         vtu, vtv (texture coordinates)
         ti (texture index)
@@ -28,6 +29,8 @@ def function(script='TEMP3D_default.mlx', red=255, green=255,
         and all custom vertex attributes already defined by user.
 
     Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
         red (str [0, 255]): function to generate red component
         green (str [0, 255]): function to generate green component
         blue (str [0, 255]): function to generate blue component
@@ -36,129 +39,139 @@ def function(script='TEMP3D_default.mlx', red=255, green=255,
             in CSS & SVG.
             Ref: https://en.wikipedia.org/wiki/Web_colors#X11_color_names
             If not None this will override the per component variables.
-            Names and values are defined in color_names.txt
 
-    Returns:
-        current_layer, last_layer
+    Layer stack:
+        No impacts
 
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
     # TODO: add options for HSV
     # https://www.cs.rit.edu/~ncs/color/t_convert.html
     if color is not None:
-        red, green, blue = util.color_values(color)
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Per Vertex Color Function">\n')
-    script_file.write(' '.join([
-        '    <Param',
-        'name="x"',
-        'value="%s"' % str(red).replace('<', '&lt;'),
-        'description="func r = "',
-        'type="RichString"',
-        '/>\n']))
-    script_file.write(' '.join([
-        '    <Param',
-        'name="y"',
-        'value="%s"' % str(green).replace('<', '&lt;'),
-        'description="func g = "',
-        'type="RichString"',
-        '/>\n']))
-    script_file.write(' '.join([
-        '    <Param',
-        'name="z"',
-        'value="%s"' % str(blue).replace('<', '&lt;'),
-        'description="func b = "',
-        'type="RichString"',
-        '/>\n']))
-    script_file.write(' '.join([
-        '    <Param',
-        'name="a"',
-        'value="%s"' % str(alpha).replace('<', '&lt;'),
-        'description="func alpha = "',
-        'type="RichString"',
-        '/>\n']))
-    script_file.write('  </filter>\n')
-    """script_file.write('  <filter name="Per Vertex Color Function">\n' +
-
-                      '    <Param name="x" ' +
-                      'value="%s" ' % str(red).replace('<', '&lt;') +
-                      'description="func r = " ' +
-                      'type="RichString" ' +
-                      'tooltip="Function to generate Red component. Expected Range' +
-                      ' 0-255"/>\n' +
-
-                      '    <Param name="y" ' +
-                      'value="%s" ' % str(green).replace('<', '&lt;') +
-                      'description="func g = " ' +
-                      'type="RichString" ' +
-                      'tooltip="Function to generate Green component. Expected Range' +
-                      ' 0-255"/>\n' +
-
-                      '    <Param name="z" ' +
-                      'value="%s" ' % str(blue).replace('<', '&lt;') +
-                      'description="func b = " ' +
-                      'type="RichString" ' +
-                      'tooltip="Function to generate Blue component. Expected Range' +
-                      ' 0-255"/>\n' +
-
-                      '    <Param name="a" ' +
-                      'value="%s" ' % str(alpha).replace('<', '&lt;') +
-                      'description="func alpha = " ' +
-                      'type="RichString" ' +
-                      'tooltip="Function to generate Alpha component. Expected Range' +
-                      ' 0-255"/>\n' +
-
-                      '  </filter>\n')"""
-    script_file.close()
-    return current_layer, last_layer
+        red, green, blue, _ = color_name[color]
+    filter_xml = ''.join([
+        '  <filter name="Per Vertex Color Function">\n',
+        '    <Param name="x" ',
+        'value="{}" '.format(str(red).replace('<', '&lt;')),
+        'description="func r = " ',
+        'type="RichString" ',
+        '/>\n',
+        '    <Param name="y" ',
+        'value="{}" '.format(str(green).replace('<', '&lt;')),
+        'description="func g = " ',
+        'type="RichString" ',
+        '/>\n',
+        '    <Param name="z" ',
+        'value="{}" '.format(str(blue).replace('<', '&lt;')),
+        'description="func b = " ',
+        'type="RichString" ',
+        '/>\n',
+        '    <Param name="a" ',
+        'value="{}" '.format(str(alpha).replace('<', '&lt;')),
+        'description="func alpha = " ',
+        'type="RichString" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    return None
 
 
-def voronoi(script='TEMP3D_default.mlx', target_layer=0,
-            source_layer=1, backward=True,
-            current_layer=None, last_layer=None):
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Voronoi Vertex Coloring">\n' +
+def voronoi(script, target_layer=0, source_layer=1, backward=True):
+    """ Given a Mesh 'M' and a Pointset 'P', the filter projects each vertex of
+        P over M and color M according to the geodesic distance from these
+        projected points. Projection and coloring are done on a per vertex
+        basis.
 
-                      '    <Param name="ColoredMesh" ' +
-                      'value="%d" ' % target_layer +
-                      'description="To be Colored Mesh" ' +
-                      'type="RichMesh" ' +
-                      'tooltip="The mesh whose surface is colored. For each vertex' +
-                      ' of this mesh we decide the color according the below' +
-                      ' parameters."/>\n' +
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        target_layer (int): The mesh layer whose surface is colored. For each
+            vertex of this mesh we decide the color according to the following
+            arguments.
+        source_layer (int): The mesh layer whose vertexes are used as seed
+            points for the color computation. These seeds point are projected
+            onto the target_layer mesh.
+        backward (bool): If True the mesh is colored according to the distance
+            from the frontier of the voronoi diagram induced by the
+            source_layer seeds.
 
-                      '    <Param name="VertexMesh" ' +
-                      'value="%d" ' % source_layer +
-                      'description="Vertex Mesh" ' +
-                      'type="RichMesh" ' +
-                      'tooltip="The mesh whose vertexes are used as seed points for' +
-                      ' the color computation. These seeds point are projected onto' +
-                      ' the above mesh."/>\n' +
+    Layer stack:
+        No impacts
 
-                      '    <Param name="backward" ' +
-                      'value="%s" ' % str(backward).lower() +
-                      'description="BackDistance" ' +
-                      'type="RichBool" ' +
-                      'tooltip="If true the mesh is colored according the distance' +
-                      ' from the frontier of the voronoi diagram induced by the' +
-                      ' VertexMesh seeds."/>\n' +
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    filter_xml = ''.join([
+        '  <filter name="Voronoi Vertex Coloring">\n',
+        '    <Param name="ColoredMesh" ',
+        'value="{:d}" '.format(target_layer),
+        'description="To be Colored Mesh" ',
+        'type="RichMesh" ',
+        '/>\n',
+        '    <Param name="VertexMesh" ',
+        'value="{:d}" '.format(source_layer),
+        'description="Vertex Mesh" ',
+        'type="RichMesh" ',
+        '/>\n',
+        '    <Param name="backward" ',
+        'value="{}" '.format(str(backward).lower()),
+        'description="BackDistance" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    return None
 
-                      '  </filter>\n')
-    script_file.close()
-    return current_layer, last_layer
 
+def cyclic_rainbow(script, direction='sphere', start_pt=(0, 0, 0),
+                   amplitude=255 / 2, center=255 / 2, freq=0.8,
+                   phase=(0, 120, 240, 0), alpha=False):
+    """ Color mesh vertices in a repeating sinusiodal rainbow pattern
 
-def cyclic_rainbow(script='TEMP3D_default.mlx', direction='sphere',
-                   start_pt=(0, 0, 0), amplitude=255 / 2, center=255 / 2,
-                   freq=0.8,
-                   phase=(0, 120, 240, 0),
-                   alpha=False, current_layer=None, last_layer=None):
-    """Color your mesh vertices in a repeating rainbow pattern
-    direction = sphere, x, y, z, function
-    start_pt = start point of color function. For a sphere this is the center of the sphere.
-    amplitude = amplitude, between 0-255
-    center = center, between 0-255
-    freq = frequency
-    phase = phase
+    Sine wave follows the following equation for each color channel (RGBA):
+    channel = sin(freq*increment + phase)*amplitude + center
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        direction (str) = the direction that the sine wave will travel; this
+            and the start_pt determine the 'increment' of the sine function.
+            Valid values are:
+            'sphere' - radiate sine wave outward from start_pt (default)
+            'x' - sine wave travels along the X axis
+            'y' - sine wave travels along the Y axis
+            'z' - sine wave travels along the Z axis
+            or define the increment directly using a muparser function, e.g.
+                '2x + y'. In this case start_pt will not be used; include it in
+                the function directly.
+    start_pt (3 coordinate tuple or list): start point of the sine wave. For a
+        sphere this is the center of the sphere.
+    amplitude (float [0, 255], single value or 4 term tuple or list): amplitude
+        of the sine wave, with range between 0-255. If a single value is
+        specified it will be used for all channels, otherwise specify each
+        channel individually.
+    center (float [0, 255], single value or 4 term tuple or list): center
+        of the sine wave, with range between 0-255. If a single value is
+        specified it will be used for all channels, otherwise specify each
+        channel individually.
+    freq (float, single value or 4 term tuple or list): frequency of the sine
+        wave. If a single value is specified it will be used for all channels,
+        otherwise specifiy each channel individually.
+    phase (float [0, 360], single value or 4 term tuple or list): phase
+        of the sine wave in degrees, with range between 0-360. If a single
+        value is specified it will be used for all channels, otherwise specify
+        each channel individually.
+    alpha (bool): if False the alpha channel will be set to 255 (full opacity).
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
     start_pt = util.make_list(start_pt, 3)
     amplitude = util.make_list(amplitude, 4)
@@ -167,29 +180,33 @@ def cyclic_rainbow(script='TEMP3D_default.mlx', direction='sphere',
     phase = util.make_list(phase, 4)
 
     if direction.lower() == 'sphere':
-        increment = 'sqrt((x-%s)^2+(y-%s)^2+(z-%s)^2)' % (
+        increment = 'sqrt((x-{})^2+(y-{})^2+(z-{})^2)'.format(
             start_pt[0], start_pt[1], start_pt[2])
     elif direction.lower() == 'x':
-        increment = 'x - %s' % start_pt[0]
+        increment = 'x - {}'.format(start_pt[0])
     elif direction.lower() == 'y':
-        increment = 'y - %s' % start_pt[1]
+        increment = 'y - {}'.format(start_pt[1])
     elif direction.lower() == 'z':
-        increment = 'z - %s' % start_pt[2]
+        increment = 'z - {}'.format(start_pt[2])
     else:
         increment = direction
 
-    red_func = 'sin(%s*%s + %s)*%s + %s' % (freq[0], increment, math.radians(phase[0]),
-                                            amplitude[0], center[0])
-    green_func = 'sin(%s*%s + %s)*%s + %s' % (freq[1], increment, math.radians(phase[1]),
-                                              amplitude[1], center[1])
-    blue_func = 'sin(%s*%s + %s)*%s + %s' % (freq[2], increment, math.radians(phase[2]),
-                                             amplitude[2], center[2])
+    red_func = 'sin({f}*{i} + {p})*{a} + {c}'.format(
+        f=freq[0], i=increment, p=math.radians(phase[0]),
+        a=amplitude[0], c=center[0])
+    green_func = 'sin({f}*{i} + {p})*{a} + {c}'.format(
+        f=freq[1], i=increment, p=math.radians(phase[1]),
+        a=amplitude[1], c=center[1])
+    blue_func = 'sin({f}*{i} + {p})*{a} + {c}'.format(
+        f=freq[2], i=increment, p=math.radians(phase[2]),
+        a=amplitude[2], c=center[2])
     if alpha:
-        alpha_func = 'sin(%s*%s + %s)*%s + %s' % (freq[3],
-                                                  increment, math.radians(phase[3]), amplitude[3], center[3])
+        alpha_func = 'sin({f}*{i} + {p})*{a} + {c}'.format(
+            f=freq[3], i=increment, p=math.radians(phase[3]),
+            a=amplitude[3], c=center[3])
     else:
         alpha_func = 255
 
     function(script, red=red_func, green=green_func, blue=blue_func,
              alpha=alpha_func)
-    return current_layer, last_layer
+    return None

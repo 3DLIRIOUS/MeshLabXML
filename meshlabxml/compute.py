@@ -1,109 +1,179 @@
 """ MeshLabXML measurement and computation functions """
 
+#from . import mlx.FilterScript
+import meshlabxml as mlx
 from . import util
 
+def section(script, axis='z', offset=0.0, surface=False, custom_axis=None,
+            planeref=2):
+    """ Compute the polyline representing a planar section (a slice) of a mesh.
 
-def section(script='TEMP3D_default.mlx', axis='z', offset=0.0,
-            surface=False, custom_axis=None, planeref=2,
-            current_layer=None, last_layer=None):
+    If the resulting polyline is closed the result can be filled with a
+    triangular mesh representing the section.
 
-    # TIP: surfaces can also be simplified after generation
-    # Recommended output formats:
-    # surface: stl, obj
-    # line: dxf, obj (need to process obj) - note: creates a 1D outline composed
-    # of line segments (not a continuous polyline but individual segments)
-    # points: xyz (for measuring size)
+    Args:
+        script: the mlx.FilterScript object or script filename to write
+            the filter to.
+        axis (str): The slicing plane is perpendicular to this axis. Accepted
+            values are 'x', 'y', or 'z'; any other input will be interpreted
+            as a custom axis (although using 'custom' is recommended
+            for clarity). Upper or lowercase values are accepted.
+        offset (float): Specify an offset of the cross-plane. The offset
+            corresponds to the distance along 'axis' from the point specified
+            in 'planeref'.
+        surface (bool): If True, in addition to a layer with the section
+            polyline, also a layer with a triangulated version of the section
+            polyline will be created. This only works if the section polyline
+            is closed.
+        custom_axis (3 component list or tuple): Specify a custom axis as
+            a 3 component vector (x, y, z); this is ignored unless 'axis' is
+            set  to 'custom'.
+        planeref (int): Specify the reference from which the planes are
+            shifted. Valid values are:
+            0 - Bounding box center
+            1 - Bounding box min
+            2 - Origin (default)
 
+    Layer stack:
+        Creates a new layer '{label}_sect_{axis_name}_{offset}', where
+            'axis_name' is one of [X, Y, Z, custom] and 'offest' is
+            truncated 'offset'
+        If surface is True, create a new layer '{label}_sect_{axis}_{offset}_mesh'
+        Current layer is changed to the last (newly created) layer
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
     # Convert axis name into number
     if axis.lower() == 'x':
         axis_num = 0
+        axis_name = 'X'
     elif axis.lower() == 'y':
         axis_num = 1
+        axis_name = 'Y'
     elif axis.lower() == 'z':
         axis_num = 2
+        axis_name = 'Z'
     else:  # custom axis
         axis_num = 3
+        axis_name = 'custom'
         if custom_axis is None:
             print('WARNING: a custom axis was selected, however',
                   '"custom_axis" was not provided. Using default (Z).')
     if custom_axis is None:
-        custom_axis = [0.0, 0.0, 1.0]
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Compute Planar Section">\n' +
+        custom_axis = (0.0, 0.0, 1.0)
 
-                      '    <Param name="planeAxis" ' +
-                      'value="%d" ' % axis_num +
-                      'description="Plane perpendicular to" ' +
-                      'enum_val0="X Axis" ' +
-                      'enum_val1="Y Axis" ' +
-                      'enum_val2="Z Axis" ' +
-                      'enum_val3="Custom Axis" ' +
-                      'enum_cardinality="4" ' +
-                      'type="RichEnum" ' +
-                      'tooltip="The Slicing plane will be done perpendicular to the' +
-                      ' axis"/>\n' +
-
-                      '    <Param name="customAxis" ' +
-                      'x="%s" y="%s" z="%s" ' % (custom_axis[0], custom_axis[1],
-                                                 custom_axis[2]) +
-                      'description="Custom axis" ' +
-                      'type="RichPoint3f" ' +
-                      'tooltip="Specify a custom axis, this is only valid if the' +
-                      ' above parameter is set to Custom"/>\n' +
-
-                      '    <Param name="planeOffset" ' +
-                      'value="%s" ' % offset +
-                      'description="Cross plane offset" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Specify an offset of the cross-plane. The offset' +
-                      ' corresponds to the distance from the point specified in the' +
-                      ' plane reference parameter."/>\n' +
-
-                      '    <Param name="relativeTo" ' +
-                      'value="%s" ' % planeref +
-                      'description="plane reference" ' +
-                      'enum_val0="Bounding box center" ' +
-                      'enum_val1="Bounding box min" ' +
-                      'enum_val2="Origin" ' +
-                      'enum_cardinality="3" ' +
-                      'type="RichEnum" ' +
-                      'tooltip="Specify the reference from which the planes are' +
-                      ' shifted"/>\n' +
-
-                      '    <Param name="createSectionSurface" ' +
-                      'value="%s" ' % str(surface).lower() +
-                      'description="Create also section surface" ' +
-                      'type="RichBool" ' +
-                      'tooltip="If selected, in addition to a layer with the section' +
-                      ' polyline, it will be created also a layer with a' +
-                      ' triangulated version of the section polyline. This only' +
-                      ' works if the section polyline is closed"/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
-    return current_layer, last_layer
+    filter_xml = ''.join([
+        '  <filter name="Compute Planar Section">\n',
+        '    <Param name="planeAxis" ',
+        'value="{:d}" '.format(axis_num),
+        'description="Plane perpendicular to" ',
+        'enum_val0="X Axis" ',
+        'enum_val1="Y Axis" ',
+        'enum_val2="Z Axis" ',
+        'enum_val3="Custom Axis" ',
+        'enum_cardinality="4" ',
+        'type="RichEnum" ',
+        '/>\n',
+        '    <Param name="customAxis" ',
+        'x="{}" y="{}" z="{}" '.format(custom_axis[0], custom_axis[1],
+                                       custom_axis[2]),
+        'description="Custom axis" ',
+        'type="RichPoint3f" ',
+        '/>\n',
+        '    <Param name="planeOffset" ',
+        'value="{}" '.format(offset),
+        'description="Cross plane offset" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="relativeTo" ',
+        'value="{:d}" '.format(planeref),
+        'description="plane reference" ',
+        'enum_val0="Bounding box center" ',
+        'enum_val1="Bounding box min" ',
+        'enum_val2="Origin" ',
+        'enum_cardinality="3" ',
+        'type="RichEnum" ',
+        '/>\n',
+        '    <Param name="createSectionSurface" ',
+        'value="{}" '.format(str(surface).lower()),
+        'description="Create also section surface" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, mlx.FilterScript):
+        current_layer_label = script.layer_stack[script.current_layer()]
+        script.add_layer('{}_sect_{}_{}'.format(current_layer_label, axis_name,
+                                                int(offset)))
+        if surface:
+            script.add_layer('{}_sect_{}_{}_mesh'.format(current_layer_label,
+                                                         axis_name, int(offset)))
+    return None
 
 
-def measure_geometry(script='TEMP3D_default.mlx',
-                     current_layer=None, last_layer=None):
-    script_file = open(script, 'a')
-    script_file.write('  <xmlfilter name="Compute Geometric Measures"/>\n')
-    script_file.close()
-    return current_layer, last_layer
+def measure_geometry(script):
+    """ Compute a set of geometric measures of a mesh/pointcloud.
+
+    Bounding box extents and diagonal, principal axis, thin shell barycenter
+    (mesh only), vertex barycenter and quality-weighted barycenter (pointcloud
+    only), surface area (mesh only), volume (closed mesh) and Inertia tensor
+    Matrix (closed mesh).
+
+    Args:
+        script: the mlx.FilterScript object or script filename to write
+            the filter to.
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+
+    Bugs:
+        Bounding box extents not computed correctly for some volumes
+    """
+    filter_xml = '  <xmlfilter name="Compute Geometric Measures"/>\n'
+    util.write_filter(script, filter_xml)
+    if isinstance(script, mlx.FilterScript):
+        script.parse_geometry = True
+    return None
 
 
-def measure_topology(script='TEMP3D_default.mlx',
-                     current_layer=None, last_layer=None):
-    script_file = open(script, 'a')
-    script_file.write('  <xmlfilter name="Compute Topological Measures"/>\n')
-    script_file.close()
-    return current_layer, last_layer
+def measure_topology(script):
+    """ Compute a set of topological measures over a mesh
+
+    Args:
+        script: the mlx.FilterScript object or script filename to write
+            the filter to.
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    filter_xml = '  <xmlfilter name="Compute Topological Measures"/>\n'
+    util.write_filter(script, filter_xml)
+    if isinstance(script, mlx.FilterScript):
+        script.parse_topology = True
+    return None
 
 
 def parse_geometry(ml_log, log=None):
     """Parse the ml_log file generated by the measure_geometry function.
 
-    Warnings: Not all keys may exist if mesh is not watertight or manifold"""
+    Warnings: Not all keys may exist if mesh is not watertight or manifold
+
+    Args:
+        ml_log (str): MeshLab log file to parse
+        log (str): filename to log output
+    """
+    # TODO: v2016.12 adds more bounding box measurements (min, max); use these
+    # instead of AABB
     geometry = {}
     with open(ml_log) as fread:
         for line in fread:
@@ -152,56 +222,6 @@ def parse_geometry(ml_log, log=None):
             log_file = open(log, 'a')
             log_file.write('{:27} = {}\n'.format(key, value))
             log_file.close()
-    """
-    if log is None:
-        print('volume_mm3 =', geometry['volume_mm3'],
-              'volume_cm3 =', geometry['volume_cm3'])
-        print('area_mm2 =', geometry['area_mm2'],
-              'area_cm2 =', geometry['area_cm2'])
-        print('barycenter =', geometry['barycenter'])
-        print('center_of_mass =', geometry['center_of_mass'])
-        print('inertia_tensor =', geometry['inertia_tensor'])
-        print('principal_axes =', geometry['principal_axes'])
-        print('axis_momenta =', geometry['axis_momenta'])
-        print('total_edge_length_incl_faux =',
-              geometry['total_edge_length_incl_faux'])
-        print('total_edge_length =', geometry['total_edge_length'])
-    else:
-        log_file = open(log, 'a')
-        if 'volume_mm3' in geometry:
-            log_file.write('volume_mm3 = %s, volume_cm3 = %s\n'
-                           % (geometry['volume_mm3'], geometry['volume_cm3']))
-        if 'area_mm2' in geometry:
-            log_file.write(''.join(['area_mm2 = %s, area_cm2 = %s\n'
-                           % (geometry['area_mm2'], geometry['area_cm2']),
-                           'total_edge_length = %s\n'
-                           % geometry['total_edge_length'],
-                           'total_edge_length_incl_faux = %s\n'
-                           % geometry['total_edge_length_incl_faux']]))
-        if 'barycenter' in geometry:
-            log_file.write('barycenter = %s\n' % geometry['barycenter'])
-        if 'center_of_mass' in geometry:
-            log_file.write('center_of_mass = %s\n'
-                           % geometry['center_of_mass'])
-        if 'inertia_tensor' in geometry:
-            log_file.write(''.join(['inertia_tensor =\n',
-                           '  %s\n' % geometry['inertia_tensor'][0],
-                           '  %s\n' % geometry['inertia_tensor'][1],
-                           '  %s\n' % geometry['inertia_tensor'][2]]))
-        if 'principal_axes' in geometry:
-            log_file.write(''.join(['principal_axes =\n',
-                           '  %s\n' % geometry['principal_axes'][0],
-                           '  %s\n' % geometry['principal_axes'][1],
-                           '  %s\n' % geometry['principal_axes'][2]]))
-        if 'axis_momenta' in geometry:
-            log_file.write('axis_momenta = %s\n' % geometry['axis_momenta'])
-        if 'total_edge_length_incl_faux' in geometry:
-            log_file.write('total_edge_length_incl_faux = %s\n'
-                           % geometry['total_edge_length_incl_faux'])
-        if 'total_edge_length' in geometry:
-            log_file.write('total_edge_length = %s\n\n'
-                           % geometry['total_edge_length'])
-        log_file.close()"""
     return geometry
 
 
@@ -266,54 +286,4 @@ def parse_topology(ml_log, log=None):
             log_file = open(log, 'a')
             log_file.write('{:16} = {}\n'.format(key, value))
             log_file.close()
-    """
-        if 'vert_num' in topology:
-            print('\nvert_num = %d, ' % topology['vert_num'],
-                  'edge_num = %d, ' % topology['edge_num'],
-                  'face_num = %d' % topology['face_num'])
-        if 'part_num' in topology:
-            print('part_num = %d\n' % topology['part_num'])
-        if 'manifold' in topology:
-            print('manifold (two-manifold) = %s\n' % topology['manifold'])
-        if 'hole_num' in topology:
-            print('hole_num = %d\n' % topology['hole_num'])
-        if 'boundry_edge_num' in topology:
-            print('boundry_edge_num = %d\n' % topology['boundry_edge_num'])
-        if 'unref_vert_num' in topology:
-            print('unref_vert_num = %d\n' % topology['unref_vert_num'])
-        if 'non_manifold_vert' in topology:
-            print('non_manifold_vert = %d\n' % topology['non_manifold_vert'])
-        if 'non_manifold_edge' in topology:
-            print('non_manifold_edge = %d\n' % topology['non_manifold_edge'])
-        if 'genus' in topology:
-            print('genus = %d\n' % topology['genus'])
-    else:
-        log_file = open(log, 'a')
-        if 'vert_num' in topology:
-            log_file.write('vert_num = %d\n' % topology['vert_num'])
-            log_file.write('edge_num = %d\n' % topology['edge_num'])
-            log_file.write('face_num = %d\n' % topology['face_num'])
-        if 'part_num' in topology:
-            log_file.write('part_num = %d\n' % topology['part_num'])
-        if 'manifold' in topology:
-            log_file.write('manifold (two-manifold) = %s\n'
-                           % topology['manifold'])
-        if 'hole_num' in topology:
-            log_file.write('hole_num = %d\n' % topology['hole_num'])
-        if 'boundry_edge_num' in topology:
-            log_file.write('boundry_edge_num = %d\n'
-                           % topology['boundry_edge_num'])
-        if 'unref_vert_num' in topology:
-            log_file.write('unref_vert_num = %d\n'
-                           % topology['unref_vert_num'])
-        if 'non_manifold_vert' in topology:
-            log_file.write('non_manifold_vert = %d\n'
-                           % topology['non_manifold_vert'])
-        if 'non_manifold_edge' in topology:
-            log_file.write('non_manifold_edge = %d\n'
-                           % topology['non_manifold_edge'])
-        if 'genus' in topology:
-            log_file.write('genus = %d\n' % topology['genus'])
-        log_file.close()
-    """
     return topology

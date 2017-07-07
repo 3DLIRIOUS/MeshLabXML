@@ -5,6 +5,7 @@ import sys
 import inspect
 from glob import glob
 
+#from . import FilterScript
 import meshlabxml as mlx
 
 def is_number(num):
@@ -103,7 +104,7 @@ def make_list(var, num_terms=1):
     return var
 
 
-def _write_filter(script, filter_xml):
+def write_filter(script, filter_xml):
     """ Write filter to FilterScript object or filename
 
     Args:

@@ -29,7 +29,9 @@ import tempfile
 
 from . import util
 from . import layers
+#from .layers import clean
 from . import clean
+from . import compute
 
 # Global variables
 ML_VERSION = '1.3.4Beta'
@@ -91,6 +93,8 @@ class FilterScript(object):
         self.__stl_layers = []
         self.file_in = file_in
         self.mlp_in = mlp_in
+        self.parse_geometry = False
+        self.parse_topology = False
         # Process input files
         # Process project files first
 
@@ -210,16 +214,32 @@ class FilterScript(object):
         if script_file is None:
             # Create temporary script file
             temp_script = True
-            temp_script_file = tempfile.NamedTemporaryFile(delete=False)
+            temp_script_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mlx')
             temp_script_file.close()
             self.save_to_file(temp_script_file.name)
+
+        if (self.parse_geometry or self.parse_topology) and (ml_log is None):
+            # create temp ml_log
+            temp_ml_log = True
+            ml_log_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
+            ml_log_file.close()
+            ml_log = ml_log_file.name
 
         run(script=temp_script_file.name, log=log, ml_log=ml_log,
             mlp_in=self.mlp_in, mlp_out=mlp_out, overwrite=overwrite,
             file_in=self.file_in, file_out=file_out, output_mask=output_mask)
 
-        # Delete temp script file
+        # Parse output
+        # TODO: record which layer this is associated with?
+        if self.parse_geometry:
+            self.geometry = compute.parse_geometry(ml_log, log)
+        if self.parse_topology:
+            self.topology = compute.parse_topology(ml_log, log)
+
+        # Delete temp files
         if temp_script:
+            os.remove(temp_script_file.name)
+        if temp_ml_log:
             os.remove(temp_script_file.name)
 
 
@@ -779,8 +799,8 @@ def muparser_ref():
     Below is a list of the predefined operators and functions within muparser.
 
     muparser homepage: http://beltoforion.de/article.php?a=muparser
-    Current version of muparser: 1.3.2 (as of MeshLab 1.3.4Beta)
-    Note that muparser was upgraded to 2.2.5 in r6672
+    ml_version='1.3.4Beta' muparser version: 1.3.2
+    ml_version='2016.12' muparser version: 2.2.5
 
     Built-in functions:
         Name    Argc.   Explanation
@@ -791,6 +811,7 @@ def muparser_ref():
         asin    1       arcus sine function
         acos    1       arcus cosine function
         atan    1       arcus tangens function
+        atan2   2       *
         sinh    1       hyperbolic sine function
         cosh    1       hyperbolic cosine
         tanh    1       hyperbolic tangens function
@@ -815,8 +836,8 @@ def muparser_ref():
         Operator    Description                Priority
         -----------------------------------------------
         =           assignment                 -1
-        and         logical and*                1
-        or          logical or*                 2
+        &&          logical and*                1
+        ||          logical or*                 2
         <=          less or equal               4
         >=          greater or equal            4
         !=          not equal                   4
@@ -829,15 +850,14 @@ def muparser_ref():
         /           division                    6
         ^           raise x to the power of y   7
 
-    Conditional Operator
-        if(Test, Then_value, Otherwise_value)*
+    Built-in ternary operator
+        ?:         (Test ? Then_value : Otherwise_value)*
 
-    *: Operator will change in the future when muparser is upgraded.
-    New operators:
-        &&         logical and                 1
-        ||         logical or                  2
-        ?:         if then else operator (Test ? Then_value : Otherwise_value)
-
+    *: Some operators in older muparser (ml_version='1.3.4Beta') are different:
+        and        logical and                 1
+        or         logical or                  2
+        if         ternary operator: if(Test, Then_value, Otherwise_value)
+        atan2      not included; use mp_atan2 below
     """
     pass
 

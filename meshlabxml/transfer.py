@@ -1,11 +1,9 @@
 """ MeshLabXML functions to transfer attributes """
 
-import math
-
 from . import util
 
 
-def tex2vc(script='TEMP3D_default.mlx'):
+def tex2vc(script):
     """Transfer texture colors to vertex colors
 
     BUG: this does not work correctly if the file has multiple textures; it
@@ -17,10 +15,8 @@ def tex2vc(script='TEMP3D_default.mlx'):
     return
 
 
-def vc2tex(script='TEMP3D_default.mlx',
-           tex_name='TEMP3D_texture.png',
-           tex_width=1024, tex_height=1024,
-           overwrite_tex=False, assign_tex=False,
+def vc2tex(script, tex_name='TEMP3D_texture.png', tex_width=1024,
+           tex_height=1024, overwrite_tex=False, assign_tex=False,
            fill_tex=True):
     """Transfer vertex colors to texture colors"""
     script_file = open(script, 'a')
@@ -75,10 +71,10 @@ def vc2tex(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def fc2vc(script='TEMP3D_default.mlx'):
+def fc2vc(script):
     """Transfer face colors to vertex colors"""
     script_file = open(script, 'a')
     script_file.write('  <filter name="Transfer Color: Face to Vertex"/>\n')
@@ -86,7 +82,7 @@ def fc2vc(script='TEMP3D_default.mlx'):
     return
 
 
-def vc2fc(script='TEMP3D_default.mlx'):
+def vc2fc(script):
     """Transfer vertex colors to face colors"""
     script_file = open(script, 'a')
     script_file.write('  <filter name="Transfer Color: Vertex to Face"/>\n')
@@ -94,7 +90,7 @@ def vc2fc(script='TEMP3D_default.mlx'):
     return
 
 
-def mesh2fc(script='TEMP3D_default.mlx', all_visible_layers=False):
+def mesh2fc(script, all_visible_layers=False):
     """Transfer mesh colors to face colors"""
     script_file = open(script, 'a')
     script_file.write('  <filter name="Transfer Color: Mesh to Face">\n')
@@ -111,17 +107,14 @@ def mesh2fc(script='TEMP3D_default.mlx', all_visible_layers=False):
     return
 
 
-def vert_attributes_2_meshes(script='TEMP3D_default.mlx',
-                             source_mesh=0, target_mesh=1,
-                             geometry=False, normal=False,
-                             color=True, quality=False,
-                             selection=False, quality_distance=False,
-                             upper_bound=0.5,
-                             current_layer=None, last_layer=None):
+def vert_attributes_2_meshes(script, source_mesh=0, target_mesh=1,
+                             geometry=False, normal=False, color=True,
+                             quality=False, selection=False,
+                             quality_distance=False, upper_bound=0.5):
     """Vertex Attribute Tranfer (between 2 meshes)
-    
+
     Transfer the chosen per-vertex attributes from one mesh to another. Useful to transfer attributes to different representations of the same object. For each vertex of the target mesh the closest point (not vertex!) on the source mesh is computed, and the requested interpolated attributes from that source point are copied into the target vertex.
-    
+
     The algorithm assumes that the two meshes are reasonably similar and aligned.
 
     UpperBound: absolute value (not percentage)
@@ -204,16 +197,14 @@ def vert_attributes_2_meshes(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def color2tex_2_meshes(script='TEMP3D_default.mlx',
-                       source_mesh=0, target_mesh=1,
-                       attribute=0, upper_bound=0.5, tex_name='TEMP3D_texture.png',
+def color2tex_2_meshes(script, source_mesh=0, target_mesh=1, attribute=0,
+                       upper_bound=0.5, tex_name='TEMP3D_texture.png',
                        tex_width=1024, tex_height=1024,
                        overwrite_tex=True, assign_tex=False,
-                       fill_tex=True,
-                       current_layer=None, last_layer=None):
+                       fill_tex=True):
     """Transfer Vertex Attributes to Texture (between 2 meshes)
 
     """
@@ -308,13 +299,10 @@ def color2tex_2_meshes(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return
 
 
-def tex2vc_2_meshes(script='TEMP3D_default.mlx',
-                               source_mesh=0, target_mesh=1,
-                               upper_bound=0.5,
-                               current_layer=None, last_layer=None):
+def tex2vc_2_meshes(script, source_mesh=0, target_mesh=1, upper_bound=0.5):
     """Transfer texture colors to vertex colors (between 2 meshes)
 
     """
@@ -348,4 +336,4 @@ def tex2vc_2_meshes(script='TEMP3D_default.mlx',
         '/>\n']))
     script_file.write('  </filter>\n')
     script_file.close()
-    return current_layer, last_layer
+    return

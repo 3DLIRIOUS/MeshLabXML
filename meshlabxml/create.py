@@ -10,13 +10,9 @@ from . import clean
 from . import layers
 
 
-def cube(script='TEMP3D_default.mlx', size=1.0,
-         center=False, color=None,
-         current_layer=None, last_layer=None):
+def cube(script, size=1.0, center=False, color=None):
     """Create a cube primitive"""
-    if current_layer is not None:
-        current_layer += 1
-        last_layer += 1
+
     """# Convert size to list if it isn't already
     if not isinstance(size, list):
         size = list(size)
@@ -46,7 +42,7 @@ def cube(script='TEMP3D_default.mlx', size=1.0,
                 size[2] / 2])
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
 # Usage: height=(1) (radius=(1)|(radius1=(1) radius2=(1)))|(diameter=(2)|(diameter1=(2) diameter2=(2))) center=(false)
@@ -62,11 +58,9 @@ def cube(script='TEMP3D_default.mlx', size=1.0,
 # center If true will center the height of the cone/cylinder around the
 # origin. Default is false, placing the base of the cylinder or radius1 radius
 # of cone at the origin.
-def cylinder(script='TEMP3D_default.mlx', up='z', height=1.0,
-             radius=None, radius1=None, radius2=None,
-             diameter=None, diameter1=None, diameter2=None,
-             center=False, cir_segments=32, color=None,
-             current_layer=None, last_layer=None):
+def cylinder(script, up='z', height=1.0, radius=None, radius1=None,
+             radius2=None, diameter=None, diameter1=None, diameter2=None,
+             center=False, cir_segments=32, color=None):
     """Create a cylinder or cone primitive. Usage is based on OpenSCAD.
     # height = height of the cylinder
     # radius1 = radius of the cone on bottom end
@@ -77,9 +71,6 @@ def cylinder(script='TEMP3D_default.mlx', up='z', height=1.0,
     # color = specify a color name to apply vertex colors to the newly
     # created mesh
     """
-    if current_layer is not None:
-        current_layer += 1
-        last_layer += 1
     if radius is not None and diameter is None:
         if radius1 is None and diameter1 is None:
             radius1 = radius
@@ -136,12 +127,10 @@ def cylinder(script='TEMP3D_default.mlx', up='z', height=1.0,
         transform.rotate(script, axis='x', angle=90)  # rotate to Z up
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
-def icosphere(script='TEMP3D_default.mlx', radius=1.0, diameter=None,
-              subdivisions=3, color=None,
-              current_layer=None, last_layer=None):
+def icosphere(script, radius=1.0, diameter=None, subdivisions=3, color=None):
     """create an icosphere mesh
 
     # subdivisions = Subdivision level; Number of the recursive subdivision of the
@@ -150,9 +139,6 @@ def icosphere(script='TEMP3D_default.mlx', radius=1.0, diameter=None,
     # approximation of a sphere). Formula for number of faces: F=20*4^subdiv
     # color = specify a color name to apply vertex colors to the newly
     # created mesh"""
-    if current_layer is not None:
-        current_layer += 1
-        last_layer += 1
     if diameter is not None:
         radius = diameter / 2
 
@@ -178,12 +164,10 @@ def icosphere(script='TEMP3D_default.mlx', radius=1.0, diameter=None,
     script_file.close()
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
-def sphere_cap(script='TEMP3D_default.mlx', angle=1.0,
-               subdivisions=3, color=None,
-               current_layer=None, last_layer=None):
+def sphere_cap(script, angle=1.0, subdivisions=3, color=None):
     """# angle = Angle of the cone subtending the cap. It must be <180
     # subdivisions = Subdivision level; Number of the recursive subdivision of the
     # surface. Default is 3 (a sphere approximation composed by 1280 faces).
@@ -191,9 +175,6 @@ def sphere_cap(script='TEMP3D_default.mlx', angle=1.0,
     # approximation of a sphere). Formula for number of faces: F=20*4^subdivisions
     # color = specify a color name to apply vertex colors to the newly
     # created mesh"""
-    if current_layer is not None:
-        current_layer += 1
-        last_layer += 1
     script_file = open(script, 'a')
     script_file.write('  <filter name="Sphere Cap">\n' +
 
@@ -217,15 +198,12 @@ def sphere_cap(script='TEMP3D_default.mlx', angle=1.0,
     script_file.close()
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
-def torus(script='TEMP3D_default.mlx',
-          major_radius=3.0, minor_radius=1.0,
-          inner_diameter=None, outer_diameter=None,
-          major_segments=48, minor_segments=12,
-          color=None,
-          current_layer=None, last_layer=None):
+def torus(script, major_radius=3.0, minor_radius=1.0, inner_diameter=None,
+          outer_diameter=None, major_segments=48, minor_segments=12,
+          color=None):
     """Create a torus mesh
 
     Args:
@@ -245,16 +223,11 @@ def torus(script='TEMP3D_default.mlx',
             ring of the torus
         color (str (optional)): color name to apply vertex colors to the
             newly created mesh
-        current_layer (int (optional)): the current layer in the stack
-        last_layer (int (optional)): the highest numbered layer in the stack
 
     Returns:
-        current_layer, last_layer
+        None
 
     """
-    if current_layer is not None:
-        current_layer += 1
-        last_layer += 1
     if inner_diameter is not None and outer_diameter is not None:
         major_radius = (inner_diameter + outer_diameter) / 4
         minor_radius = major_radius - inner_diameter / 2
@@ -293,23 +266,19 @@ def torus(script='TEMP3D_default.mlx',
     script_file.close()
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
-def grid(script='TEMP3D_default.mlx', size=1.0,
-         x_segments=1, y_segments=1,
-         center=False, color=None,
-         current_layer=None, last_layer=None):
+def grid(script, size=1.0, x_segments=1, y_segments=1, center=False,
+         color=None):
     """2D square/plane/grid created on XY plane
-    
+
     x_segments # Number of segments in the X direction.
     y_segments # Number of segments in the Y direction.
     center="false" # If true square will be centered on origin;
     otherwise it is place in the positive XY quadrant.
     """
-    if current_layer is not None:
-        current_layer += 1
-        last_layer += 1
+
     """# Convert size to list if it isn't already
     if not isinstance(size, list):
         size = list(size)
@@ -369,14 +338,11 @@ def grid(script='TEMP3D_default.mlx', size=1.0,
         transform.translate(script, value=[size[0], 0, 0])
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
-def annulus(script='TEMP3D_default.mlx',
-            radius=None, radius1=None, radius2=None,
-            diameter=None, diameter1=None, diameter2=None,
-            cir_segments=32, color=None,
-            current_layer=None, last_layer=None):
+def annulus(script, radius=None, radius1=None, radius2=None, diameter=None,
+            diameter1=None, diameter2=None, cir_segments=32, color=None):
     """Create a 2D (surface) circle or annulus
     radius1=1 # Outer radius of the circle
     radius2=0 # Inner radius of the circle (if non-zero it creates an annulus)
@@ -384,9 +350,6 @@ def annulus(script='TEMP3D_default.mlx',
 
     OpenSCAD: parameters: diameter overrides radius, radius1 & radius2 override radius
     """
-    if current_layer is not None:
-        current_layer += 1
-        last_layer += 1
     if radius is not None and diameter is None:
         if radius1 is None and diameter1 is None:
             radius1 = radius
@@ -433,14 +396,12 @@ def annulus(script='TEMP3D_default.mlx',
     script_file.close()
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
-def cylinder_open_hires(script='TEMP3D_default.mlx', height=1.0,
-                        radius=1, diameter=None,
+def cylinder_open_hires(script, height=1.0, radius=1, diameter=None,
                         cir_segments=48, height_segments=1,
-                        invert_normals=False, center=False, color=None,
-                        current_layer=None, last_layer=None):
+                        invert_normals=False, center=False, color=None):
     """ Creates a round open tube, e.g. a cylinder with no top or bottom.
 
     Useful if you want to wrap it around and join the open ends together, forming a torus.
@@ -455,12 +416,10 @@ def cylinder_open_hires(script='TEMP3D_default.mlx', height=1.0,
     else:
         z_translate = 0.0
 
-    current_layer, last_layer = grid(script,
-                                     [2 * math.pi * radius, height],
-                                     x_segments=cir_segments,
-                                     y_segments=height_segments,
-                                     current_layer=current_layer,
-                                     last_layer=last_layer)
+    grid(script,
+         [2 * math.pi * radius, height],
+         x_segments=cir_segments,
+         y_segments=height_segments)
     transform.rotate(script, 'x', 90)
     transform.translate(script, [math.pi * radius / 2, 0, z_translate])
     if not invert_normals:
@@ -469,13 +428,11 @@ def cylinder_open_hires(script='TEMP3D_default.mlx', height=1.0,
     clean.merge_vert(script, threshold=0.00002)
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
-def cube_open_hires(script='TEMP3D_default.mlx', size=1.0,
-                    x_segments=1, y_segments=1, z_segments=1,
-                    center=False, color=None,
-                    current_layer=None, last_layer=None):
+def cube_open_hires(script, size=1.0, x_segments=1, y_segments=1, z_segments=1,
+                    center=False, color=None):
     """ Creates a square open tube, e.g. a box with no top or bottom.
 
     Useful if you want to wrap it around and join the open ends together, forming a torus.
@@ -489,61 +446,46 @@ def cube_open_hires(script='TEMP3D_default.mlx', size=1.0,
     size = util.make_list(size, 3)
 
     # X sides
-    current_layer, last_layer = grid(script, [size[0], size[2]],
-                                     x_segments=x_segments,
-                                     y_segments=z_segments,
-                                     current_layer=current_layer,
-                                     last_layer=last_layer)
+    grid(script, [size[0], size[2]],
+         x_segments=x_segments,
+         y_segments=z_segments)
     transform.rotate(script, 'x', 90)
     #transform.translate(script, [0, 0, -size[2]])
-    current_layer, last_layer = layers.duplicate(script,
-                                                 current_layer=current_layer,
-                                                 last_layer=last_layer)
+    layers.duplicate(script)
     # Rotate to correct normals
     transform.rotate(script, 'z', 180)
     transform.translate(script, [size[0], size[1], 0])
 
     # Y sides
-    current_layer, last_layer = grid(script, [size[2], size[1]],
-                                     x_segments=z_segments,
-                                     y_segments=y_segments,
-                                     current_layer=current_layer,
-                                     last_layer=last_layer)
+    grid(script, [size[2], size[1]],
+         x_segments=z_segments,
+         y_segments=y_segments)
     transform.rotate(script, 'y', -90)
     #transform.rotate(script, 'z', 90)
     #transform.translate(script, [0, 0, -size[2]])
-    current_layer, last_layer = layers.duplicate(script,
-                                                 current_layer=current_layer,
-                                                 last_layer=last_layer)
+    layers.duplicate(script)
     # Rotate to correct normals
     transform.rotate(script, 'z', 180)
     transform.translate(script, [size[0], size[1], 0])
 
-    current_layer, last_layer = layers.join(script,
-                                            current_layer=current_layer,
-                                            last_layer=last_layer)
+    layers.join(script)
     clean.merge_vert(script, threshold=0.00002)
     # normals.fix(script)
     if center:
         transform.translate(script, [-size[0] / 2, -size[1] / 2, -size[2] / 2])
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
-def plane_hires_edges(script='TEMP3D_default.mlx', size=1.0,
-                      x_segments=1, y_segments=1,
-                      center=False, color=None,
-                      current_layer=None, last_layer=None):
+def plane_hires_edges(script, size=1.0, x_segments=1, y_segments=1,
+                      center=False, color=None):
     """ Creates a plane with a specified number of vertices
     on it sides, but no vertices on the interior.
 
     Currently used to create a simpler bottom for cube_hires.
 
     """
-    if current_layer is not None:
-        current_layer += 1
-        last_layer += 1
     size = util.make_list(size, 2)
 
     grid(script, size=[x_segments + y_segments - 1, 1],
@@ -577,17 +519,15 @@ def plane_hires_edges(script='TEMP3D_default.mlx', size=1.0,
         transform.translate(script, [-size[0] / 2, -size[1] / 2])
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
 def half_sphere_hires():
     pass
 
 
-def cube_hires(script='TEMP3D_default.mlx', size=1.0,
-               x_segments=1, y_segments=1, z_segments=1,
-               simple_bottom=True, center=False, color=None,
-               current_layer=None, last_layer=None):
+def cube_hires(script, size=1.0, x_segments=1, y_segments=1, z_segments=1,
+               simple_bottom=True, center=False, color=None):
     """Create a box with user defined number of segments in each direction.
 
     Grid spacing is the same as its dimensions (spacing = 1) and its
@@ -614,53 +554,42 @@ def cube_hires(script='TEMP3D_default.mlx', size=1.0,
     size = util.make_list(size, 3)
 
     # Top
-    current_layer, last_layer = grid(script,
-                                     size,
-                                     x_segments,
-                                     y_segments,
-                                     current_layer=current_layer,
-                                     last_layer=last_layer)
+    grid(script,
+         size,
+         x_segments,
+         y_segments)
     transform.translate(script, [0, 0, size[2]])
 
     # Bottom
     if simple_bottom:
-        current_layer, last_layer = plane_hires_edges(
-            script, size, x_segments, y_segments,
-            current_layer=current_layer,
-            last_layer=last_layer)
+        plane_hires_edges(
+            script, size, x_segments, y_segments)
     else:
-        current_layer, last_layer = layers.duplicate(script,
-                                                     current_layer=current_layer,
-                                                     last_layer=last_layer)
+        layers.duplicate(script)
         transform.translate(script, [0, 0, -size[2]])
     # Rotate to correct normals
     transform.rotate(script, 'x', 180)
     transform.translate(script, [0, size[1], 0])
 
     # Sides
-    current_layer, last_layer = cube_open_hires(
+    cube_open_hires(
         script=script, size=size, x_segments=x_segments,
-        y_segments=y_segments, z_segments=z_segments,
-        current_layer=current_layer, last_layer=last_layer)
+        y_segments=y_segments, z_segments=z_segments)
 
     # Join everything together
-    current_layer, last_layer = layers.join(
-        script,
-        current_layer=current_layer, last_layer=last_layer)
+    layers.join(script)
     # Need some tolerance on merge_vert due to rounding errors
     clean.merge_vert(script, threshold=0.00002)
     if center:
         transform.translate(script, [-size[0] / 2, -size[1] / 2, -size[2] / 2])
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
-def annulus_hires(script='TEMP3D_default.mlx',
-                  radius=None, radius1=None, radius2=None,
+def annulus_hires(script, radius=None, radius1=None, radius2=None,
                   diameter=None, diameter1=None, diameter2=None,
-                  cir_segments=48, rad_segments=1, color=None,
-                  current_layer=None, last_layer=None):
+                  cir_segments=48, rad_segments=1, color=None):
     """Create a cylinder with user defined number of segments
 
     """
@@ -685,27 +614,20 @@ def annulus_hires(script='TEMP3D_default.mlx',
     ring = (radius1 - radius2) / rad_segments
 
     for i in range(0, rad_segments):
-        current_layer, last_layer = annulus(script,
-                                            radius1=radius1 - i * ring,
-                                            radius2=radius1 - (i + 1) * ring,
-                                            cir_segments=cir_segments,
-                                            current_layer=current_layer,
-                                            last_layer=last_layer)
-    current_layer, last_layer = layers.join(script,
-                                            merge_vert=True,
-                                            current_layer=current_layer,
-                                            last_layer=last_layer)
+        annulus(script,
+                radius1=radius1 - i * ring,
+                radius2=radius1 - (i + 1) * ring,
+                cir_segments=cir_segments)
+    layers.join(script, merge_vert=True)
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
-def tube_hires(script='TEMP3D_default.mlx', height=1.0,
-               radius=None, radius1=None, radius2=None,
-               diameter=None, diameter1=None, diameter2=None,
-               cir_segments=32, rad_segments=1, height_segments=1,
-               center=False, simple_bottom=False, color=None,
-               current_layer=None, last_layer=None):
+def tube_hires(script, height=1.0, radius=None, radius1=None, radius2=None,
+               diameter=None, diameter1=None, diameter2=None, cir_segments=32,
+               rad_segments=1, height_segments=1, center=False,
+               simple_bottom=False, color=None):
     """Create a cylinder with user defined number of segments
 
     """
@@ -733,27 +655,21 @@ def tube_hires(script='TEMP3D_default.mlx', height=1.0,
         radius2 = 0
 
     # Create top
-    current_layer, last_layer = annulus_hires(script,
-                                              radius1=radius1,
-                                              radius2=radius2,
-                                              cir_segments=cir_segments,
-                                              rad_segments=rad_segments,
-                                              current_layer=current_layer,
-                                              last_layer=last_layer)
+    annulus_hires(script,
+                  radius1=radius1,
+                  radius2=radius2,
+                  cir_segments=cir_segments,
+                  rad_segments=rad_segments)
     transform.translate(script, [0, 0, height])
 
     # Create bottom
     if simple_bottom:
-        current_layer, last_layer = annulus(script,
-                                            radius1=radius1,
-                                            radius2=radius2,
-                                            cir_segments=cir_segments,
-                                            current_layer=current_layer,
-                                            last_layer=last_layer)
+        annulus(script,
+                radius1=radius1,
+                radius2=radius2,
+                cir_segments=cir_segments)
     else:
-        current_layer, last_layer = layers.duplicate(script,
-                                                     current_layer=current_layer,
-                                                     last_layer=last_layer)
+        layers.duplicate(script)
         transform.translate(script, [0, 0, -height])
     # Rotate to correct normals
     transform.rotate(script, 'x', 180)
@@ -771,16 +687,14 @@ def tube_hires(script='TEMP3D_default.mlx', height=1.0,
                             invert_normals=True)
 
     # Join everything together
-    current_layer, last_layer = layers.join(
-        script,
-        current_layer=current_layer, last_layer=last_layer)
+    layers.join(script)
     # Need some tolerance on merge_vert due to rounding errors
     clean.merge_vert(script, threshold=0.00002)
     if center:
         transform.translate(script, [0, 0, -height / 2])
     if color is not None:
         vert_color.function(script, color=color)
-    return current_layer, last_layer
+    return
 
 
 def triangle():

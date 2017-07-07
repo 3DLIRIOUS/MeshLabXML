@@ -2,7 +2,6 @@
 
 from . import util
 
-
 def reorient(script):
     """ Re-orient in a consistent way all the faces of the mesh.
 
@@ -26,9 +25,8 @@ def reorient(script):
         2016.12
         1.3.4BETA
     """
-    filter_xml = ''.join([
-        '  <filter name="Re-Orient all faces coherentely"/>\n'])
-    util._write_filter(script, filter_xml)
+    filter_xml = '  <filter name="Re-Orient all faces coherentely"/>\n'
+    util.write_filter(script, filter_xml)
     return None
 
 
@@ -56,7 +54,6 @@ def flip(script, force_flip=False, selected=False):
     """
     filter_xml = ''.join([
         '  <filter name="Invert Faces Orientation">\n',
-
         '    <Param name="forceFlip" ',
         'value="{}" '.format(str(force_flip).lower()),
         'description="Force Flip" ',
@@ -68,13 +65,12 @@ def flip(script, force_flip=False, selected=False):
         'type="RichBool" ',
         '/>\n',
         '  </filter>\n'])
-    util._write_filter(script, filter_xml)
+    util.write_filter(script, filter_xml)
     return None
 
 
 def fix(script):
     """ Will reorient normals & ensure they are oriented outwards
-
 
     Layer stack:
         No impacts
@@ -137,5 +133,5 @@ def point_sets(script, neighbors=10, smooth_iteration=0, flip=False,
         'type="RichPoint3f" ',
         '/>\n',
         '  </filter>\n'])
-    util._write_filter(script, filter_xml)
+    util.write_filter(script, filter_xml)
     return None
