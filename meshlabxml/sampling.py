@@ -255,3 +255,58 @@ def poisson_disk(script, sample_num=1000, radius=0.0,
         if save_montecarlo:
             script.add_layer('Montecarlo Samples')
     return None
+
+
+def mesh_element(script, sample_num=1000, element='VERT'):
+    """ Create a new layer populated with a point sampling of the current mesh,
+        at most one sample for each element of the mesh is created.
+
+    Samples are taking in a uniform way, one for each element
+    (vertex/edge/face); all the elements have the same probabilty of being
+    choosen.
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        sample_num (int): The desired number of elements that must be chosen.
+            Being a subsampling of the original elements if this number should
+            not be larger than the number of elements of the original mesh.
+        element (enum in ['VERT', 'EDGE', 'FACE']): Choose what mesh element
+            will be used for the subsampling. At most one point sample will
+            be added for each one of the chosen elements
+
+    Layer stack:
+        Creates new layer 'Sampled Mesh'. Current layer is changed to the new
+            layer.
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    if element.lower() == 'vert':
+        element_num = 0
+    elif element.lower() == 'edge':
+        element_num = 1
+    elif element.lower() == 'face':
+        element_num = 2
+    filter_xml = ''.join([
+        '  <filter name="Mesh Element Subsampling">\n',
+        '    <Param name="Sampling" ',
+        'value="{:d}" '.format(element_num),
+        'description="Element to sample:" ',
+        'enum_val0="Vertex" ',
+        'enum_val1="Edge" ',
+        'enum_val2="Face" ',
+        'enum_cardinality="3" ',
+        'type="RichEnum" ',
+        '/>\n',
+        '    <Param name="SampleNum" ',
+        'value="{:d}" '.format(sample_num),
+        'description="Number of samples" ',
+        'type="RichInt" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Sampled Mesh')
+    return None
