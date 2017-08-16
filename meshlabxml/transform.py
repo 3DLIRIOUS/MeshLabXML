@@ -10,58 +10,62 @@ from . import mp_atan2
 
 def translate2(script, value=(0.0, 0.0, 0.0), center=False, freeze=True,
                all_layers=False):
+    """
+
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        value (vector, tuple or list): Absolute translation value along the X axis,
+        center Translate center of bbox to the origin.
+        freeze (bool): The transformation is explicitly applied and the  vertex coords are actually changed.
+        all_layers (bool): The transformation is explicitly applied to all the mesh and raster layers in the project.
+
+
+    """
     # Convert value to list if it isn't already
     if not isinstance(value, list):
         value = list(value)
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Transform: Move, Translate, Center">\n' +
-
-                      '    <Param name="axisX" ' +
-                      'value="%s" ' % value[0] +
-                      'description="X Axis" ' +
-                      'min="-500" ' +
-                      'max="500" ' +
-                      'type="RichDynamicFloat" ' +
-                      'tooltip="Absolute translation value along the X axis."/>\n' +
-
-                      '    <Param name="axisY" ' +
-                      'value="%s" ' % value[1] +
-                      'description="Y Axis" ' +
-                      'min="-500" ' +
-                      'max="500" ' +
-                      'type="RichDynamicFloat" ' +
-                      'tooltip="Absolute translation value along the Y axis."/>\n' +
-
-                      '    <Param name="axisZ" ' +
-                      'value="%s" ' % value[2] +
-                      'description="Z Axis" ' +
-                      'min="-500" ' +
-                      'max="500" ' +
-                      'type="RichDynamicFloat" ' +
-                      'tooltip="Absolute translation value along the Z axis."/>\n' +
-
-                      '    <Param name="centerFlag" ' +
-                      'value="%s" ' % str(center).lower() +
-                      'description="Translate center of bbox to the origin." ' +
-                      'type="RichBool" ' +
-                      'tooltip="Translate center of bbox to the origin."/>\n' +
-
-                      '    <Param name="Freeze" ' +
-                      'value="%s" ' % str(freeze).lower() +
-                      'description="Freeze Matrix." ' +
-                      'type="RichBool" ' +
-                      'tooltip="The transformation is explicitly applied and the' +
-                      ' vertex coords are actually changed."/>\n' +
-
-                      '    <Param name="ToAll" ' +
-                      'value="%s" ' % str(all_layers).lower() +
-                      'description="Apply to all layers." ' +
-                      'type="RichBool" ' +
-                      'tooltip="The transformation is explicitly applied to all the' +
-                      ' mesh and raster layers in the project."/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
+    filter_xml = ''.join([
+        '  <filter name="Transform: Move, Translate, Center">\n',
+        '    <Param name="axisX" ',
+        'value="%s" ' % value[0],
+        'description="X Axis" ',
+        'min="-500" ',
+        'max="500" ',
+        'type="RichDynamicFloat" ',
+        '/>\n',
+        '    <Param name="axisY" ',
+        'value="%s" ' % value[1],
+        'description="Y Axis" ',
+        'min="-500" ',
+        'max="500" ',
+        'type="RichDynamicFloat" ',
+        '/>\n',
+        '    <Param name="axisZ" ',
+        'value="%s" ' % value[2],
+        'description="Z Axis" ',
+        'min="-500" ',
+        'max="500" ',
+        'type="RichDynamicFloat" ',
+        '/>\n',
+        '    <Param name="centerFlag" ',
+        'value="%s" ' % str(center).lower(),
+        'description="Translate center of bbox to the origin." ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="Freeze" ',
+        'value="%s" ' % str(freeze).lower(),
+        'description="Freeze Matrix." ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="ToAll" ',
+        'value="%s" ' % str(all_layers).lower(),
+        'description="Apply to all layers." ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
     return None
 
 
@@ -80,6 +84,25 @@ def translate(script, value=(0.0, 0.0, 0.0)):
 
 def rotate2(script, axis='z', angle=0.0, custom_axis=None, center_pt='origin',
             custom_center_pt=None, freeze=True, all_layers=False):
+    """
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        axis (str): Choose a method.
+        angle (float): "Angle of rotation (in degrees). If snapping is',
+        ' enabled this value is rounded according to the snap',
+        ' value.
+        custom_axis (vector): This rotation axis is used only if the',
+        ' _custom axis_ option is chosen.
+        center_pt (str): Choose a method.
+        custom_center_pt (bool): This rotation center is used only if the',
+        ' _custom point_ option is chosen.
+        freeze (bool): The transformation is explicitly applied and the',
+        ' vertex coords are actually changed.
+        all_layers (bool): The transformation is explicitly applied to all the',
+        ' mesh and raster layers in the project.
+    """
     # Convert axis name into number
     if axis.lower() == 'x':
         axis_num = 0
@@ -105,88 +128,70 @@ def rotate2(script, axis='z', angle=0.0, custom_axis=None, center_pt='origin',
                   '"custom_center_pt" was not provided. Using default',
                   '(origin).')
             custom_center_pt = [0.0, 0.0, 0.0]
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Transform: Rotate">\n' +
-
-                      '    <Param name="rotAxis" ' +
-                      'value="%d" ' % axis_num +
-                      'description="Rotation on:" ' +
-                      'enum_val0="X axis" ' +
-                      'enum_val1="Y axis" ' +
-                      'enum_val2="Z axis" ' +
-                      'enum_val3="custom axis" ' +
-                      'enum_cardinality="4" ' +
-                      'type="RichEnum" ' +
-                      'tooltip="Choose a method."/>\n' +
-
-                      '    <Param name="rotCenter" ' +
-                      'value="%d" ' % center_pt_num +
-                      'description="Center of rotation:" ' +
-                      'enum_val0="origin" ' +
-                      'enum_val1="barycenter" ' +
-                      'enum_val2="custom point" ' +
-                      'enum_cardinality="3" ' +
-                      'type="RichEnum" ' +
-                      'tooltip="Choose a method."/>\n' +
-
-                      '    <Param name="angle" ' +
-                      'value="%s" ' % angle +
-                      'description="Rotation Angle" ' +
-                      'min="-360" ' +
-                      'max="360" ' +
-                      'type="RichDynamicFloat" ' +
-                      'tooltip="Angle of rotation (in degrees). If snapping is' +
-                      ' enabled this value is rounded according to the snap' +
-                      ' value."/>\n' +
-
-                      '    <Param name="snapFlag" ' +
-                      'value="false" ' +
-                      'description="Snap angle" ' +
-                      'type="RichBool" ' +
-                      'tooltip="If selected, before starting the filter will remove' +
-                      ' any unreferenced vertex (for which curvature values are not' +
-                      ' defined)."/>\n' +
-
-                      '    <Param name="customAxis" ' +
-                      'x="%s" ' % custom_axis[0] +
-                      'y="%s" ' % custom_axis[1] +
-                      'z="%s" ' % custom_axis[2] +
-                      'description="Custom axis" ' +
-                      'type="RichPoint3f" ' +
-                      'tooltip="This rotation axis is used only if the' +
-                      ' _custom axis_ option is chosen."/>\n' +
-
-                      '    <Param name="customCenter" ' +
-                      'x="%s" ' % custom_center_pt[0] +
-                      'y="%s" ' % custom_center_pt[1] +
-                      'z="%s" ' % custom_center_pt[2] +
-                      'description="Custom center" ' +
-                      'type="RichPoint3f" ' +
-                      'tooltip="This rotation center is used only if the' +
-                      ' _custom point_ option is chosen."/>\n' +
-
-                      '    <Param name="snapAngle" ' +
-                      'value="30" ' +
-                      'description="Snapping Value" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="This value is used to snap the rotation angle."/>\n' +
-
-                      '    <Param name="Freeze" ' +
-                      'value="%s" ' % str(freeze).lower() +
-                      'description="Freeze Matrix." ' +
-                      'type="RichBool" ' +
-                      'tooltip="The transformation is explicitly applied and the' +
-                      ' vertex coords are actually changed."/>\n' +
-
-                      '    <Param name="ToAll" ' +
-                      'value="%s" ' % str(all_layers).lower() +
-                      'description="Apply to all layers." ' +
-                      'type="RichBool" ' +
-                      'tooltip="The transformation is explicitly applied to all the' +
-                      ' mesh and raster layers in the project."/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
+    filter_xml = ''.join([
+        '  <filter name="Transform: Rotate">\n',
+        '    <Param name="rotAxis" ',
+        'value="%d" ' % axis_num,
+        'description="Rotation on:" ',
+        'enum_val0="X axis" ',
+        'enum_val1="Y axis" ',
+        'enum_val2="Z axis" ',
+        'enum_val3="custom axis" ',
+        'enum_cardinality="4" ',
+        'type="RichEnum" ',
+        '/>\n',
+        '    <Param name="rotCenter" ',
+        'value="%d" ' % center_pt_num,
+        'description="Center of rotation:" ',
+        'enum_val0="origin" ',
+        'enum_val1="barycenter" ',
+        'enum_val2="custom point" ',
+        'enum_cardinality="3" ',
+        'type="RichEnum" ',
+        '/>\n',
+        '    <Param name="angle" ',
+        'value="%s" ' % angle,
+        'description="Rotation Angle" ',
+        'min="-360" ',
+        'max="360" ',
+        'type="RichDynamicFloat" ',
+        '/>\n',
+        '    <Param name="snapFlag" ',
+        'value="false" ',
+        'description="Snap angle" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="customAxis" ',
+        'x="%s" ' % custom_axis[0],
+        'y="%s" ' % custom_axis[1],
+        'z="%s" ' % custom_axis[2],
+        'description="Custom axis" ',
+        'type="RichPoint3f" ',
+        '/>\n',
+        '    <Param name="customCenter" ',
+        'x="%s" ' % custom_center_pt[0],
+        'y="%s" ' % custom_center_pt[1],
+        'z="%s" ' % custom_center_pt[2],
+        'description="Custom center" ',
+        'type="RichPoint3f" ',
+        '/>\n',
+        '    <Param name="snapAngle" ',
+        'value="30" ',
+        'description="Snapping Value" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="Freeze" ',
+        'value="%s" ' % str(freeze).lower(),
+        'description="Freeze Matrix." ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="ToAll" ',
+        'value="%s" ' % str(all_layers).lower(),
+        'description="Apply to all layers." ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
     return None
 
 
@@ -217,6 +222,24 @@ def rotate(script, axis='z', angle=0.0):
 
 def scale2(script, value=1.0, uniform=True, center_pt='origin',
            custom_center_pt=None, unit=False, freeze=True, all_layers=False):
+    """
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        value (float): Scaling along the X axis.
+        uniform (bool): If selected an uniform scaling (the same for all the',
+        ' three axis) is applied (the X axis value is used).
+        center_pt (str): Choose a method.
+        custom_center_pt (point): This scaling center is used only if the',
+        ' _custom point_ option is chosen.
+        unit (bool): If selected, the object is scaled to a box whose',
+        ' sides are at most 1 unit length.
+        freeze (bool): The transformation is explicitly applied and the',
+        ' vertex coords are actually changed.
+        all_layers (bool): The transformation is explicitly applied to all the',
+        ' mesh and raster layers in the project.
+    """
     """# Convert value to list if it isn't already
     if not isinstance(value, list):
         value = list(value)
@@ -236,76 +259,61 @@ def scale2(script, value=1.0, uniform=True, center_pt='origin',
                   '"custom_center_pt" was not provided. Using default',
                   '(origin).')
             custom_center_pt = [0.0, 0.0, 0.0]
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Transform: Scale">\n' +
-
-                      '    <Param name="axisX" ' +
-                      'value="%s" ' % value[0] +
-                      'description="X Axis" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Scaling along the X axis."/>\n' +
-
-                      '    <Param name="axisY" ' +
-                      'value="%s" ' % value[1] +
-                      'description="Y Axis" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Scaling along the Y axis."/>\n' +
-
-                      '    <Param name="axisZ" ' +
-                      'value="%s" ' % value[2] +
-                      'description="Z Axis" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Scaling along the Z axis."/>\n' +
-
-                      '    <Param name="uniformFlag" ' +
-                      'value="%s" ' % str(uniform).lower() +
-                      'description="Uniform Scaling" ' +
-                      'type="RichBool" ' +
-                      'tooltip="If selected an uniform scaling (the same for all the' +
-                      ' three axis) is applied (the X axis value is used)."/>\n' +
-
-                      '    <Param name="scaleCenter" ' +
-                      'value="%d" ' % center_pt_num +
-                      'description="Center of scaling:" ' +
-                      'enum_val0="origin" ' +
-                      'enum_val1="barycenter" ' +
-                      'enum_val2="custom point" ' +
-                      'enum_cardinality="3" ' +
-                      'type="RichEnum" ' +
-                      'tooltip="Choose a method."/>\n' +
-
-                      '    <Param name="customCenter" ' +
-                      'x="%s" ' % custom_center_pt[0] +
-                      'y="%s" ' % custom_center_pt[1] +
-                      'z="%s" ' % custom_center_pt[2] +
-                      'description="Custom center" ' +
-                      'type="RichPoint3f" ' +
-                      'tooltip="This scaling center is used only if the' +
-                      ' _custom point_ option is chosen."/>\n' +
-
-                      '    <Param name="unitFlag" ' +
-                      'value="%s" ' % str(unit).lower() +
-                      'description="Scale to Unit bbox" ' +
-                      'type="RichBool" ' +
-                      'tooltip="If selected, the object is scaled to a box whose' +
-                      ' sides are at most 1 unit length."/>\n' +
-
-                      '    <Param name="Freeze" ' +
-                      'value="%s" ' % str(freeze).lower() +
-                      'description="Freeze Matrix." ' +
-                      'type="RichBool" ' +
-                      'tooltip="The transformation is explicitly applied and the' +
-                      ' vertex coords are actually changed."/>\n' +
-
-                      '    <Param name="ToAll" ' +
-                      'value="%s" ' % str(all_layers).lower() +
-                      'description="Apply to all layers." ' +
-                      'type="RichBool" ' +
-                      'tooltip="The transformation is explicitly applied to all the' +
-                      ' mesh and raster layers in the project."/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
+    filter_xml = ''.join([
+        '  <filter name="Transform: Scale">\n',
+        '    <Param name="axisX" ',
+        'value="%s" ' % value[0],
+        'description="X Axis" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="axisY" ',
+        'value="%s" ' % value[1],
+        'description="Y Axis" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="axisZ" ',
+        'value="%s" ' % value[2],
+        'description="Z Axis" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="uniformFlag" ',
+        'value="%s" ' % str(uniform).lower(),
+        'description="Uniform Scaling" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="scaleCenter" ',
+        'value="%d" ' % center_pt_num,
+        'description="Center of scaling:" ',
+        'enum_val0="origin" ',
+        'enum_val1="barycenter" ',
+        'enum_val2="custom point" ',
+        'enum_cardinality="3" ',
+        'type="RichEnum" ',
+        '/>\n',
+        '    <Param name="customCenter" ',
+        'x="%s" ' % custom_center_pt[0],
+        'y="%s" ' % custom_center_pt[1],
+        'z="%s" ' % custom_center_pt[2],
+        'description="Custom center" ',
+        'type="RichPoint3f" ',
+        '/>\n',
+        '    <Param name="unitFlag" ',
+        'value="%s" ' % str(unit).lower(),
+        'description="Scale to Unit bbox" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="Freeze" ',
+        'value="%s" ' % str(freeze).lower(),
+        'description="Freeze Matrix." ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="ToAll" ',
+        'value="%s" ' % str(all_layers).lower(),
+        'description="Apply to all layers." ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
     return None
 
 
@@ -327,18 +335,28 @@ def scale(script, value=1.0):
 
 
 def freeze_matrix(script, all_layers=False):
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Freeze Current Matrix">\n' +
+    """ Freeze the current transformation matrix into the coordinates of the
+        vertices of the mesh (and set this matrix to the identity).
 
-                      '    <Param name="allLayers" ' +
-                      'value="%s" ' % str(all_layers).lower() +
-                      'description="Apply to all visible Layers" ' +
-                      'type="RichBool" ' +
-                      'tooltip="If selected the filter will be applied to all' +
-                      ' visible layers."/>\n' +
+    In other words it applies in a definitive way the current matrix to the
+    vertex coordinates.
 
-                      '  </filter>\n')
-    script_file.close()
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        all_layers (bool): If selected the filter will be applied to all
+            visible mesh layers.
+
+    """
+    filter_xml = ''.join([
+        '  <filter name="Freeze Current Matrix">\n',
+        '    <Param name="allLayers" ',
+        'value="%s" ' % str(all_layers).lower(),
+        'description="Apply to all visible Layers" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
     return None
 
 

@@ -84,15 +84,16 @@ class FilterScript(object):
     add run method?
 
     """
-    def __init__(self, file_in=None, mlp_in=None):
-        self.ml_version = '1.3.4BETA' # MeshLab version
+    def __init__(self, file_in=None, mlp_in=None, file_out=None, ml_version='1.3.4BETA'):
+        self.ml_version = ml_version # MeshLab version
         self.filters = []
         self.layer_stack = [-1] # set current layer to -1
         self.opening = ['<!DOCTYPE FilterScript>\n<FilterScript>\n']
-        self.closing = ['</FilterScript>']
+        self.closing = ['</FilterScript>\n']
         self.__stl_layers = []
         self.file_in = file_in
         self.mlp_in = mlp_in
+        self.file_out = file_out
         self.parse_geometry = False
         self.parse_topology = False
         # Process input files
@@ -208,15 +209,18 @@ class FilterScript(object):
         script_file_descriptor.close()
 
     def run_script(self, log=None, ml_log=None, mlp_out=None, overwrite=False,
-        file_out=None, output_mask=None, script_file=None):
+                   file_out=None, output_mask=None, script_file=None):
 
         temp_script = False
+        temp_ml_log = False
+
         if script_file is None:
             # Create temporary script file
             temp_script = True
             temp_script_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mlx')
             temp_script_file.close()
             self.save_to_file(temp_script_file.name)
+            script_file = temp_script_file.name
 
         if (self.parse_geometry or self.parse_topology) and (ml_log is None):
             # create temp ml_log
@@ -224,8 +228,10 @@ class FilterScript(object):
             ml_log_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
             ml_log_file.close()
             ml_log = ml_log_file.name
+        if file_out is None:
+            file_out = self.file_out
 
-        run(script=temp_script_file.name, log=log, ml_log=ml_log,
+        run(script=script_file, log=log, ml_log=ml_log,
             mlp_in=self.mlp_in, mlp_out=mlp_out, overwrite=overwrite,
             file_in=self.file_in, file_out=file_out, output_mask=output_mask)
 
@@ -269,11 +275,12 @@ def handle_error(program_name, cmd, log=None):
     print(' x  - exit, keeping the TEMP3D files and log')
     print(' xd - exit, deleting the TEMP3D files and log')
     while True:
-        choice = input('Select r, c, x, or xd: ')
+        choice = input('Select r, c, x (default), or xd: ')
         if choice not in ('r', 'c', 'x', 'xd'):
-            print('Please enter a valid option.')
-        else:
-            break
+            #print('Please enter a valid option.')
+            choice = 'x'
+        #else:
+        break
     if choice == 'x':
         print('Exiting ...')
         sys.exit(1)

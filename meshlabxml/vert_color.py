@@ -191,17 +191,17 @@ def cyclic_rainbow(script, direction='sphere', start_pt=(0, 0, 0),
     else:
         increment = direction
 
-    red_func = 'sin({f}*{i} + {p})*{a} + {c}'.format(
+    red_func = '{a}*sin({f}*{i} + {p}) + {c}'.format(
         f=freq[0], i=increment, p=math.radians(phase[0]),
         a=amplitude[0], c=center[0])
-    green_func = 'sin({f}*{i} + {p})*{a} + {c}'.format(
+    green_func = '{a}*sin({f}*{i} + {p}) + {c}'.format(
         f=freq[1], i=increment, p=math.radians(phase[1]),
         a=amplitude[1], c=center[1])
-    blue_func = 'sin({f}*{i} + {p})*{a} + {c}'.format(
+    blue_func = '{a}*sin({f}*{i} + {p}) + {c}'.format(
         f=freq[2], i=increment, p=math.radians(phase[2]),
         a=amplitude[2], c=center[2])
     if alpha:
-        alpha_func = 'sin({f}*{i} + {p})*{a} + {c}'.format(
+        alpha_func = '{a}*sin({f}*{i} + {p}) + {c}'.format(
             f=freq[3], i=increment, p=math.radians(phase[3]),
             a=amplitude[3], c=center[3])
     else:

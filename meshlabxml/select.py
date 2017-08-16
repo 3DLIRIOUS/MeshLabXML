@@ -190,7 +190,7 @@ def nonmanifold_edge(script):
         2016.12
         1.3.4BETA
     """
-    filter_xml = '  <filter name="Select non Manifold Edges"/>\n'
+    filter_xml = '  <filter name="Select non Manifold Edges "/>\n'
     util.write_filter(script, filter_xml)
     return None
 

@@ -3,12 +3,12 @@
 
 import math
 
-from . import transform
+from . import FilterScript
 from . import util
+from . import transform
 from . import vert_color
 from . import clean
 from . import layers
-
 
 def cube(script, size=1.0, center=False, color=None):
     """Create a cube primitive"""
@@ -20,29 +20,24 @@ def cube(script, size=1.0, center=False, color=None):
     if len(size) == 1:
         size = [size[0], size[0], size[0]]"""
     size = util.make_list(size, 3)
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Box">\n' +
-
-                      '    <Param name="size" ' +
-                      'value="1.0" ' +
-                      'description="Scale factor" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Scales the new mesh"/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
+    filter_xml = ''.join([
+        '  <filter name="Box">\n',
+        '    <Param name="size" ',
+        'value="1.0" ',
+        'description="Scale factor" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Cube', change_layer=True)
     transform.scale(script, value=size)
     # Box is centered on origin at creation
     if not center:
-        transform.translate(
-            script,
-            value=[
-                size[0] / 2,
-                size[1] / 2,
-                size[2] / 2])
+        transform.translate(script, value=[size[0]/2, size[1]/2, size[2]/2])
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 # Usage: height=(1) (radius=(1)|(radius1=(1) radius2=(1)))|(diameter=(2)|(diameter1=(2) diameter2=(2))) center=(false)
@@ -68,7 +63,10 @@ def cylinder(script, up='z', height=1.0, radius=None, radius1=None,
     # center = If true will center the height of the cone/cylinder around
     # the origin. Default is false, placing the base of the cylinder or radius1
     # radius of cone at the origin.
-    # color = specify a color name to apply vertex colors to the newly
+    #
+    cir_segments Number of sides of the polygonal approximation of the cone
+
+    color = specify a color name to apply vertex colors to the newly
     # created mesh
     """
     if radius is not None and diameter is None:
@@ -91,48 +89,45 @@ def cylinder(script, up='z', height=1.0, radius=None, radius1=None,
         radius2 = radius1
 
     # Cylinder is created centered with Y up
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Cone">\n' +
-
-                      '    <Param name="h" ' +
-                      'value="%s" ' % height +
-                      'description="Height" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Height of the Cone"/>\n' +
-
-                      '    <Param name="r0" ' +
-                      'value="%s" ' % radius1 +
-                      'description="Radius 1" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Radius of the bottom circumference"/>\n' +
-
-                      '    <Param name="r1" ' +
-                      'value="%s" ' % radius2 +
-                      'description="Radius 2" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Radius of the top circumference"/>\n' +
-
-                      '    <Param name="subdiv" ' +
-                      'value="%d" ' % cir_segments +
-                      'description="Side" ' +
-                      'type="RichInt" ' +
-                      'tooltip="Number of sides of the polygonal approximation of' +
-                      ' the cone"/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
+    filter_xml = ''.join([
+        '  <filter name="Cone">\n',
+        '    <Param name="h" ',
+        'value="%s" ' % height,
+        'description="Height" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="r0" ',
+        'value="%s" ' % radius1,
+        'description="Radius 1" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="r1" ',
+        'value="%s" ' % radius2,
+        'description="Radius 2" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="subdiv" ',
+        'value="%d" ' % cir_segments,
+        'description="Side" ',
+        'type="RichInt" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Cone', change_layer=True)
     if not center:
         transform.translate(script, [0, height / 2, 0])
     if up.lower() == 'z':
         transform.rotate(script, axis='x', angle=90)  # rotate to Z up
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def icosphere(script, radius=1.0, diameter=None, subdivisions=3, color=None):
     """create an icosphere mesh
 
+    radius Radius of the sphere
     # subdivisions = Subdivision level; Number of the recursive subdivision of the
     # surface. Default is 3 (a sphere approximation composed by 1280 faces).
     # Admitted values are in the range 0 (an icosahedron) to 8 (a 1.3 MegaTris
@@ -141,64 +136,54 @@ def icosphere(script, radius=1.0, diameter=None, subdivisions=3, color=None):
     # created mesh"""
     if diameter is not None:
         radius = diameter / 2
-
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Sphere">\n' +
-
-                      '    <Param name="radius" ' +
-                      'value="%s" ' % radius +
-                      'description="Radius" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Radius of the sphere"/>\n' +
-
-                      '    <Param name="subdiv" ' +
-                      'value="%d" ' % subdivisions +
-                      'description="Subdiv. Level" ' +
-                      'type="RichInt" ' +
-                      'tooltip="Number of the recursive subdivision of the surface.' +
-                      ' Default is 3 (a sphere approximation composed by 1280' +
-                      ' faces). Admitted values are in the range 0 (an icosahedron)' +
-                      ' to 8 (a 1.3 MegaTris approximation of a sphere)."/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
+    filter_xml = ''.join([
+        '  <filter name="Sphere">\n',
+        '    <Param name="radius" ',
+        'value="%s" ' % radius,
+        'description="Radius" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="subdiv" ',
+        'value="%d" ' % subdivisions,
+        'description="Subdiv. Level" ',
+        'type="RichInt" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Sphere', change_layer=True)
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def sphere_cap(script, angle=1.0, subdivisions=3, color=None):
-    """# angle = Angle of the cone subtending the cap. It must be <180
+    """# angle = Angle of the cone subtending the cap. It must be <180 less than 180
     # subdivisions = Subdivision level; Number of the recursive subdivision of the
     # surface. Default is 3 (a sphere approximation composed by 1280 faces).
     # Admitted values are in the range 0 (an icosahedron) to 8 (a 1.3 MegaTris
     # approximation of a sphere). Formula for number of faces: F=20*4^subdivisions
     # color = specify a color name to apply vertex colors to the newly
     # created mesh"""
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Sphere Cap">\n' +
-
-                      '    <Param name="angle" ' +
-                      'value="%s" ' % angle +
-                      'description="Angle" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Angle of the cone subtending the cap. It must be' +
-                      ' less than 180"/>\n' +
-
-                      '    <Param name="subdiv" ' +
-                      'value="%d" ' % subdivisions +
-                      'description="Subdiv. Level" ' +
-                      'type="RichInt" ' +
-                      'tooltip="Number of the recursive subdivision of the surface.' +
-                      ' Default is 3 (a sphere approximation composed by 1280' +
-                      ' faces). Admitted values are in the range 0 (an icosahedron)' +
-                      ' to 8 (a 1.3 MegaTris approximation of a sphere)."/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
+    filter_xml = ''.join([
+        '  <filter name="Sphere Cap">\n',
+        '    <Param name="angle" ',
+        'value="%s" ' % angle,
+        'description="Angle" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="subdiv" ',
+        'value="%d" ' % subdivisions,
+        'description="Subdiv. Level" ',
+        'type="RichInt" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Sphere Cap', change_layer=True)
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def torus(script, major_radius=3.0, minor_radius=1.0, inner_diameter=None,
@@ -233,40 +218,35 @@ def torus(script, major_radius=3.0, minor_radius=1.0, inner_diameter=None,
         minor_radius = major_radius - inner_diameter / 2
         # Ref: inner_diameter = 2 * (major_radius - minor_radius)
         # Ref: outer_diameter = 2 * (major_radius + minor_radius)
-
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Torus">\n' +
-
-                      '    <Param name="hRadius" ' +
-                      'value="%s" ' % major_radius +
-                      'description="Horizontal Radius" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Radius of the whole horizontal ring of the torus"/>\n' +
-
-                      '    <Param name="vRadius" ' +
-                      'value="%s" ' % minor_radius +
-                      'description="Vertical Radius" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Radius of the vertical section of the ring"/>\n' +
-
-                      '    <Param name="hSubdiv" ' +
-                      'value="%d" ' % major_segments +
-                      'description="Horizontal Subdivision" ' +
-                      'type="RichInt" ' +
-                      'tooltip="Subdivision step of the ring"/>\n' +
-
-                      '    <Param name="vSubdiv" ' +
-                      'value="%d" ' % minor_segments +
-                      'description="Vertical Subdivision" ' +
-                      'type="RichInt" ' +
-                      'tooltip="Number of sides of the polygonal approximation of' +
-                      ' the torus section"/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
+    filter_xml = ''.join([
+        '  <filter name="Torus">\n',
+        '    <Param name="hRadius" ',
+        'value="%s" ' % major_radius,
+        'description="Horizontal Radius" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="vRadius" ',
+        'value="%s" ' % minor_radius,
+        'description="Vertical Radius" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="hSubdiv" ',
+        'value="%d" ' % major_segments,
+        'description="Horizontal Subdivision" ',
+        'type="RichInt" ',
+        '/>\n',
+        '    <Param name="vSubdiv" ',
+        'value="%d" ' % minor_segments,
+        'description="Vertical Subdivision" ',
+        'type="RichInt" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Torus', change_layer=True)
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def grid(script, size=1.0, x_segments=1, y_segments=1, center=False,
@@ -277,68 +257,58 @@ def grid(script, size=1.0, x_segments=1, y_segments=1, center=False,
     y_segments # Number of segments in the Y direction.
     center="false" # If true square will be centered on origin;
     otherwise it is place in the positive XY quadrant.
+
+
     """
-
-    """# Convert size to list if it isn't already
-    if not isinstance(size, list):
-        size = list(size)
-    # If a single value was supplied use it for all 2 axes
-    if len(size) == 1:
-        size = [size[0], size[0]]"""
     size = util.make_list(size, 2)
+    filter_xml = ''.join([
+        '  <filter name="Grid Generator">\n',
+        '    <Param name="absScaleX" ',
+        'value="{}" '.format(size[0]),
+        'description="x scale" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="absScaleY" ',
+        'value="{}" '.format(size[1]),
+        'description="y scale" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="numVertX" ',
+        'value="{:d}" '.format(x_segments + 1),
+        'description="num vertices on x" ',
+        'type="RichInt" ',
+        '/>\n',
+        '    <Param name="numVertY" ',
+        'value="{:d}" '.format(y_segments + 1),
+        'description="num vertices on y" ',
+        'type="RichInt" ',
+        '/>\n',
+        '    <Param name="center" ',
+        'value="false" ',
+        'description="centered on origin" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Grid Generator', change_layer=True)
 
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Grid Generator">\n' +
-
-                      '    <Param name="absScaleX" ' +
-                      'value="%s" ' % size[0] +
-                      'description="x scale" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="absolute scale on x (float)"/>\n' +
-
-                      '    <Param name="absScaleY" ' +
-                      'value="%s" ' % size[1] +
-                      'description="y scale" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="absolute scale on y (float)"/>\n' +
-
-                      '    <Param name="numVertX" ' +
-                      'value="%d" ' % (x_segments + 1) +
-                      'description="num vertices on x" ' +
-                      'type="RichInt" ' +
-                      'tooltip="number of vertices on x. it must be positive"/>\n' +
-
-                      '    <Param name="numVertY" ' +
-                      'value="%d" ' % (y_segments + 1) +
-                      'description="num vertices on y" ' +
-                      'type="RichInt" ' +
-                      'tooltip="number of vertices on y. it must be positive"/>\n' +
-
-                      '    <Param name="center" ' +
-                      'value="false" ' +
-                      'description="centered on origin" ' +
-                      'type="RichBool" ' +
-                      'tooltip="center grid generated by filter on origin.' +
-                      ' Grid is first generated and than moved into origin (using' +
-                      ' muparser lib to perform fast calc on every vertex)"/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
-    transform.function(script, z_func='rint(z)')
     """This is to work around a bug in MeshLab whereby the Grid Generator does not
     create zero values for z. Ref bug #458: https://sourceforge.net/p/meshlab/bugs/458/"""
+    transform.function(script, z_func='rint(z)')
+
     """Note that the "center" parameter in the mlx script does not actually
     center the square, not sure what it is doing. Instead this is set to false,
     which places the plane in the -X,+Y quadrant, and it is translated to the
     appropriate position after creation.
     """
     if center:
-        transform.translate(script, value=[size[0] / 2, -size[1] / 2, 0])
+        transform.translate(script, value=[size[0]/2, -size[1]/2, 0])
     else:
         transform.translate(script, value=[size[0], 0, 0])
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def annulus(script, radius=None, radius1=None, radius2=None, diameter=None,
@@ -370,33 +340,30 @@ def annulus(script, radius=None, radius1=None, radius2=None, diameter=None,
         radius2 = 0
 
     # Circle is created centered on the XY plane
-    script_file = open(script, 'a')
-    script_file.write('  <filter name="Annulus">\n' +
-
-                      '    <Param name="externalRadius" ' +
-                      'value="%s" ' % radius1 +
-                      'description="External Radius" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="External Radius of the annulus"/>\n' +
-
-                      '    <Param name="internalRadius" ' +
-                      'value="%s" ' % radius2 +
-                      'description="Internal Radius" ' +
-                      'type="RichFloat" ' +
-                      'tooltip="Internal Radius of the annulus"/>\n' +
-
-                      '    <Param name="sides" ' +
-                      'value="%d" ' % cir_segments +
-                      'description="Sides" ' +
-                      'type="RichInt" ' +
-                      'tooltip="Number of sides of the polygonal approximation of' +
-                      ' the annulus"/>\n' +
-
-                      '  </filter>\n')
-    script_file.close()
+    filter_xml = ''.join([
+        '  <filter name="Annulus">\n',
+        '    <Param name="externalRadius" ',
+        'value="%s" ' % radius1,
+        'description="External Radius" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="internalRadius" ',
+        'value="%s" ' % radius2,
+        'description="Internal Radius" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="sides" ',
+        'value="%d" ' % cir_segments,
+        'description="Sides" ',
+        'type="RichInt" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Annulus', change_layer=True)
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def cylinder_open_hires(script, height=1.0, radius=1, diameter=None,
@@ -428,7 +395,7 @@ def cylinder_open_hires(script, height=1.0, radius=1, diameter=None,
     clean.merge_vert(script, threshold=0.00002)
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def cube_open_hires(script, size=1.0, x_segments=1, y_segments=1, z_segments=1,
@@ -475,7 +442,7 @@ def cube_open_hires(script, size=1.0, x_segments=1, y_segments=1, z_segments=1,
         transform.translate(script, [-size[0] / 2, -size[1] / 2, -size[2] / 2])
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def plane_hires_edges(script, size=1.0, x_segments=1, y_segments=1,
@@ -519,7 +486,7 @@ def plane_hires_edges(script, size=1.0, x_segments=1, y_segments=1,
         transform.translate(script, [-size[0] / 2, -size[1] / 2])
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def half_sphere_hires():
@@ -584,7 +551,7 @@ def cube_hires(script, size=1.0, x_segments=1, y_segments=1, z_segments=1,
         transform.translate(script, [-size[0] / 2, -size[1] / 2, -size[2] / 2])
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def annulus_hires(script, radius=None, radius1=None, radius2=None,
@@ -621,7 +588,7 @@ def annulus_hires(script, radius=None, radius1=None, radius2=None,
     layers.join(script, merge_vert=True)
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def tube_hires(script, height=1.0, radius=None, radius1=None, radius2=None,
@@ -694,7 +661,7 @@ def tube_hires(script, height=1.0, radius=None, radius1=None, radius2=None,
         transform.translate(script, [0, 0, -height / 2])
     if color is not None:
         vert_color.function(script, color=color)
-    return
+    return None
 
 
 def triangle():

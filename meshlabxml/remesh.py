@@ -3,6 +3,11 @@
 #import meshlabxml as mlx
 from . import FilterScript
 from . import util
+from . import sampling
+from . import vert_color
+from . import select
+from . import delete
+from . import smooth
 
 def simplify(script, texture=True, faces=25000, target_perc=0.0,
              quality_thr=0.3, preserve_boundary=False, boundary_weight=1.0,
@@ -427,3 +432,91 @@ def surface_poisson_screened(script, visible_layer=False, depth=8,
     if isinstance(script, FilterScript):
         script.add_layer('Poisson mesh', change_layer=False)
     return None
+
+
+def curvature_flipping(script, angle_threshold=1.0, curve_type=0,
+                       selected=False):
+    """ Use the points and normals to build a surface using the Poisson
+        Surface reconstruction approach.
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        angle_threshold (float): To avoid excessive flipping/swapping we
+            consider only couple of faces with a significant diedral angle
+            (e.g. greater than the indicated threshold).
+        curve_type (int): Choose a metric to compute surface curvature on vertices
+            H = mean curv, K = gaussian curv, A = area per vertex
+            1: Mean curvature = H
+            2: Norm squared mean curvature = (H * H) / A
+            3: Absolute curvature:
+                if(K >= 0) return 2 * H
+                else return 2 * sqrt(H ^ 2 - A * K)
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    filter_xml = ''.join([
+        '  <filter name="Curvature flipping optimization">\n',
+        '    <Param name="selection" ',
+        'value="{}" '.format(str(selected).lower()),
+        'description="Update selection" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="pthreshold" ',
+        'value="{}" '.format(angle_threshold),
+        'description="Angle Thr (deg)" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="curvtype" ',
+        'value="{:d}" '.format(curve_type),
+        'description="Curvature metric" ',
+        'enum_val0="mean" ',
+        'enum_val1="norm squared" ',
+        'enum_val2="absolute" ',
+        'enum_cardinality="3" ',
+        'type="RichEnum" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    return None
+
+
+def voronoi(script, hole_num=50, target_layer=None, sample_layer=None, thickness=0.5):
+    """ Turn a model into a surface with Voronoi style holes in it
+
+    References:
+    http://meshlabstuff.blogspot.com/2009/03/creating-voronoi-sphere.html
+    http://meshlabstuff.blogspot.com/2009/04/creating-voronoi-sphere-2.html
+
+    Requires FilterScript object
+
+    Args:
+        script: the FilterScript object to write the filter to. Does not
+            work with a script filename.
+
+
+    """
+
+    if target_layer is None:
+        target_layer = script.current_layer()
+    if sample_layer is None:
+        # Current layer is currently not changed after poisson_disk is run
+        sampling.poisson_disk(script, sample_num=hole_num)
+        sample_layer = script.last_layer()
+
+    vert_color.voronoi(script, target_layer=target_layer, source_layer=sample_layer, backward=True)
+    select.vert_quality(script, min_quality=0.0, max_quality=thickness)
+    select.invert(script)
+    delete.selected(script)
+    smooth.laplacian(script, iterations=3)
+
+    return None
+
+
+def solidify(script, thickness):
+    pass
