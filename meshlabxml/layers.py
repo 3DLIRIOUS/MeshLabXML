@@ -72,7 +72,7 @@ def join(script, merge_visible=True, merge_vert=False, delete_layer=True,
             # layers will be deleted. This will be updated once layer
             # visibility is tracked.
             for i in range(script.last_layer()):
-                delete(script, 0)
+                script.del_layer(0)
     return None
 
 
@@ -268,4 +268,17 @@ def split_parts(script, part_num=None, layer_num=None):
                   'incorrect!')
     else:
         util.write_filter(script, filter_xml)
+    return None
+
+def delete_lower(script, layer_num=None):
+    """ Delete all layers below the specified one.
+
+    Useful for MeshLab ver 2016.12, whcih will only output layer 0.
+    """
+    if layer_num is None:
+        layer_num = script.current_layer()
+    if layer_num != 0:
+        change(script, 0)
+    for i in range(layer_num):
+        delete(script, 0)
     return None

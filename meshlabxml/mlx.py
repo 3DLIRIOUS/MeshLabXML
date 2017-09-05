@@ -93,6 +93,7 @@ class FilterScript(object):
         self.__stl_layers = []
         self.file_in = file_in
         self.mlp_in = mlp_in
+        self.__no_file_in = False
         self.file_out = file_out
         self.parse_geometry = False
         self.parse_topology = False
@@ -100,10 +101,10 @@ class FilterScript(object):
         # Process project files first
 
         # TODO: test to make sure this works with "bunny"; should work fine!
-        if mlp_in is not None:
+        if self.mlp_in is not None:
             # make a list if it isn't already
-            mlp_in = util.make_list(mlp_in)
-            for val in mlp_in:
+            self.mlp_in = util.make_list(self.mlp_in)
+            for val in self.mlp_in:
                 tree = ET.parse(val)
                 #root = tree.getroot()
                 for elem in tree.iter(tag='MLMesh'):
@@ -122,10 +123,10 @@ class FilterScript(object):
                         # TODO: FIX THIS WITH NEW METHOD CALL
                         self.__stl_layers.append(self.current_layer())
         # Process separate input files next
-        if file_in is not None:
+        if self.file_in is not None:
             # make a list if it isn't already
-            file_in = util.make_list(file_in)
-            for val in file_in:
+            self.file_in = util.make_list(self.file_in)
+            for val in self.file_in:
                 fext = os.path.splitext(val)[1][1:].strip().lower()
                 label = os.path.splitext(val)[0].strip() # file prefix
                 #print('layer_stack = %s' % self.layer_stack)
@@ -156,15 +157,11 @@ class FilterScript(object):
             # with a single vertex and delete it first in the script.
             # This works around the fact that meshlabserver will
             # not run without an input file.
-            # TODO: use a proper temp file here
-            file_in = ['TEMP3D_DELETE_ME.xyz']
-            file_in_descriptor = open(file_in[0], 'w')
-            file_in_descriptor.write('0 0 0')
-            file_in_descriptor.close()
+            # Layer stack is modified here; temp file
+            # is created during run
+            self.__no_file_in = True
             self.add_layer('DELETE_ME')
-            self.set_current_layer(self.last_layer())
             layers.delete(self)
-        #"""
 
     def last_layer(self):
         """ Returns the index number of the last layer """
@@ -214,6 +211,16 @@ class FilterScript(object):
         temp_script = False
         temp_ml_log = False
 
+        if self.__no_file_in:
+            # If no input files are provided, create a dummy file
+            # with a single vertex and delete it first in the script.
+            # This works around the fact that meshlabserver will
+            # not run without an input file.
+            temp_file_in_file = tempfile.NamedTemporaryFile(delete=False, suffix='.xyz', dir=os.getcwd())
+            temp_file_in_file.write(b'0 0 0')
+            temp_file_in_file.close()
+            self.file_in = [temp_file_in_file.name]
+
         if script_file is None:
             # Create temporary script file
             temp_script = True
@@ -243,10 +250,12 @@ class FilterScript(object):
             self.topology = compute.parse_topology(ml_log, log)
 
         # Delete temp files
+        if self.__no_file_in:
+            os.remove(temp_file_in_file.name)
         if temp_script:
             os.remove(temp_script_file.name)
         if temp_ml_log:
-            os.remove(temp_script_file.name)
+            os.remove(ml_log_file.name)
 
 
 def handle_error(program_name, cmd, log=None):
@@ -776,111 +785,3 @@ def create_mlp(file_out, mlp_mesh=None, mlp_raster=None):
     mlp_file.close()
 
     return
-
-
-def muparser_ref():
-    """Reference documentation for muparser.
-
-    muparser is used by many internal MeshLab filters, specifically those
-    where you can control parameters via a mathematical expression. Examples:
-        transform.function
-        select.vert_function
-        vert_color.function
-
-    The valid variables that can be used in an expression are given in the
-    documentation for the individual functions. Generally, it's possible to use
-    the following per-vertex variables in the expression:
-
-    Variables (per vertex):
-        x, y, z (coordinates)
-        nx, ny, nz (normal)
-        r, g, b, a (color)
-        q (quality)
-        rad
-        vi (vertex index)
-        vtu, vtv (texture coordinates)
-        ti (texture index)
-        vsel (is the vertex selected? 1 yes, 0 no)
-        and all custom vertex attributes already defined by user.
-
-    Below is a list of the predefined operators and functions within muparser.
-
-    muparser homepage: http://beltoforion.de/article.php?a=muparser
-    ml_version='1.3.4Beta' muparser version: 1.3.2
-    ml_version='2016.12' muparser version: 2.2.5
-
-    Built-in functions:
-        Name    Argc.   Explanation
-        ----------------------------
-        sin     1       sine function
-        cos     1       cosine function
-        tan     1       tangens function
-        asin    1       arcus sine function
-        acos    1       arcus cosine function
-        atan    1       arcus tangens function
-        atan2   2       *
-        sinh    1       hyperbolic sine function
-        cosh    1       hyperbolic cosine
-        tanh    1       hyperbolic tangens function
-        asinh   1       hyperbolic arcus sine function
-        acosh   1       hyperbolic arcus tangens function
-        atanh   1       hyperbolic arcur tangens function
-        log2    1       logarithm to the base 2
-        log10   1       logarithm to the base 10
-        log     1       logarithm to the base 10
-        ln      1       logarithm to base e (2.71828...)
-        exp     1       e raised to the power of x
-        sqrt    1       square root of a value
-        sign    1       sign function -1 if x<0; 1 if x>0
-        rint    1       round to nearest integer
-        abs     1       absolute value
-        min     var.    min of all arguments
-        max     var.    max of all arguments
-        sum     var.    sum of all arguments
-        avg     var.    mean value of all arguments
-
-    Built-in binary operators
-        Operator    Description                Priority
-        -----------------------------------------------
-        =           assignment                 -1
-        &&          logical and*                1
-        ||          logical or*                 2
-        <=          less or equal               4
-        >=          greater or equal            4
-        !=          not equal                   4
-        ==          equal                       4
-        >           greater than                4
-        <           less than                   4
-        +           addition                    5
-        -           subtraction                 5
-        *           multiplication              6
-        /           division                    6
-        ^           raise x to the power of y   7
-
-    Built-in ternary operator
-        ?:         (Test ? Then_value : Otherwise_value)*
-
-    *: Some operators in older muparser (ml_version='1.3.4Beta') are different:
-        and        logical and                 1
-        or         logical or                  2
-        if         ternary operator: if(Test, Then_value, Otherwise_value)
-        atan2      not included; use mp_atan2 below
-    """
-    pass
-
-
-def mp_atan2(y, x):
-    """muparser atan2 function
-
-    Implements an atan2(y,x) function for older muparser versions (<2.1.0);
-    atan2 was added as a built-in function in muparser 2.1.0
-
-    Args:
-        y (str): y argument of the atan2(y,x) function
-        x (str): x argument of the atan2(y,x) function
-
-    Returns:
-        A muparser string that calculates atan2(y,x)
-    """
-    return 'if((x)>0, atan((y)/(x)), if(((x)<0) and ((y)>=0), atan((y)/(x))+pi, if(((x)<0) and ((y)<0), atan((y)/(x))-pi, if(((x)==0) and ((y)>0), pi/2, if(((x)==0) and ((y)<0), -pi/2, 0)))))'.replace(
-        'pi', str(math.pi)).replace('y', y).replace('x', x)

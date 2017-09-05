@@ -77,11 +77,18 @@ def small_parts(script, ratio=0.2, non_closed_only=False):
 def selected(script, face=True, vert=True):
     """ Delete selected vertices and/or faces
 
+    Note: if the mesh has no faces (e.g. a point cloud) you must
+    set face=False, or the vertices will not be deleted
+
     Args:
         script: the FilterScript object or script filename to write
             the filter to.
-        face (bool): if True the selected faces will be deleted
-        vert (bool): if True the selected vertices will be deleted
+        face (bool): if True the selected faces will be deleted. If vert
+            is also True, then all the vertices surrounded by those faces will
+            also be deleted. Note that if no faces are selected (only vertices)
+            then this filter will not do anything. For example, if you want to
+            delete a point cloud selection, you must set this to False.
+        vert (bool): if True the selected vertices will be deleted.
 
     Layer stack:
         No impacts

@@ -62,40 +62,39 @@ def main():
     # height = height of outer triangle
     height = width / math.tan(math.radians(90 / star_points))
 
-    # This function always comes first and starts the mlx script
-    mlx.begin()
+    shield = mlx.FilterScript(file_out="shield.ply")
 
     # Create the colored front of the shield using several concentric
     # annuluses; combine them together and subdivide so we have more vertices
     # to give a smoother deformation later.
-    mlx.create.annulus(radius=star_radius, cir_segments=segments, color='blue')
-    mlx.create.annulus(
+    mlx.create.annulus(shield, radius=star_radius, cir_segments=segments, color='blue')
+    mlx.create.annulus(shield,
         radius1=star_radius + ring_thickness,
         radius2=star_radius,
         cir_segments=segments,
         color='red')
-    mlx.create.annulus(
+    mlx.create.annulus(shield,
         radius1=star_radius + 2 * ring_thickness,
         radius2=star_radius + ring_thickness,
         cir_segments=segments,
         color='white')
-    mlx.create.annulus(
+    mlx.create.annulus(shield,
         radius1=star_radius + 3 * ring_thickness,
         radius2=star_radius + 2 * ring_thickness,
         cir_segments=segments,
         color='red')
-    mlx.layers.join()
-    mlx.subdivide.midpoint(iterations=2)
+    mlx.layers.join(shield)
+    mlx.subdivide.midpoint(shield, iterations=2)
 
     # Create the inside surface of the shield & translate down slightly so it
     # doesn't overlap the front.
-    mlx.create.annulus(
+    mlx.create.annulus(shield,
         radius1=star_radius + 3 * ring_thickness,
         cir_segments=segments,
         color='silver')
-    mlx.transform.rotate(axis='y', angle=180)
-    mlx.transform.translate(value=[0, 0, -0.005])
-    mlx.subdivide.midpoint(iterations=4)
+    mlx.transform.rotate(shield, axis='y', angle=180)
+    mlx.transform.translate(shield, value=[0, 0, -0.005])
+    mlx.subdivide.midpoint(shield, iterations=4)
 
     # Create a diamond for the center star. First create a plane, specifying
     # extra vertices to support the final deformation. The length from the
@@ -104,38 +103,31 @@ def main():
     # by 45 degrees and scale it to stretch it out per the calculations above,
     # then translate it into place (including moving it up in z slightly so
     # that it doesn't overlap the shield front).
-    mlx.create.grid(
+    mlx.create.grid(shield,
         size=math.sqrt(2),
         x_segments=10,
         y_segments=10,
         center=True,
         color='white')
-    mlx.transform.rotate(axis='z', angle=45)
-    mlx.transform.scale(value=[width, height, 1])
-    mlx.transform.translate(value=[0, polygon_radius, 0.001])
+    mlx.transform.rotate(shield, axis='z', angle=45)
+    mlx.transform.scale(shield, value=[width, height, 1])
+    mlx.transform.translate(shield, value=[0, polygon_radius, 0.001])
 
     # Duplicate the diamond and rotate the duplicates around, generating the
     # star.
     for _ in range(1, star_points):
-        mlx.layers.duplicate()
-        mlx.transform.rotate(axis='z', angle=360 / star_points)
+        mlx.layers.duplicate(shield)
+        mlx.transform.rotate(shield, axis='z', angle=360 / star_points)
 
     # Combine everything together and deform using a spherical function.
-    mlx.layers.join()
-    mlx.transform.function(
+    mlx.layers.join(shield)
+    mlx.transform.vert_function(shield,
         z_func='sqrt(%s-x^2-y^2)-%s+z' %
         (sphere_radius**2, sphere_radius))
 
-    # This function always comes last and ends the mlx script
-    mlx.end()
-
     # Run the script using meshlabserver and generate the model
-    mlx.run(file_out="Cap's_shield.ply")
-
-    wait = input(
-        '\nPress ENTER to delete TEMP3D* files, or type "n" to keep them: ')
-    if wait == '':
-        mlx.util.delete_all('TEMP3D*')
+    shield.run_script()
+    return None
 
 if __name__ == '__main__':
     main()

@@ -486,7 +486,7 @@ def curvature_flipping(script, angle_threshold=1.0, curve_type=0,
     return None
 
 
-def voronoi(script, hole_num=50, target_layer=None, sample_layer=None, thickness=0.5):
+def voronoi(script, hole_num=50, target_layer=None, sample_layer=None, thickness=0.5, backward=True):
     """ Turn a model into a surface with Voronoi style holes in it
 
     References:
@@ -499,7 +499,12 @@ def voronoi(script, hole_num=50, target_layer=None, sample_layer=None, thickness
         script: the FilterScript object to write the filter to. Does not
             work with a script filename.
 
+    Layer stack:
+        No impacts
 
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
 
     if target_layer is None:
@@ -509,9 +514,10 @@ def voronoi(script, hole_num=50, target_layer=None, sample_layer=None, thickness
         sampling.poisson_disk(script, sample_num=hole_num)
         sample_layer = script.last_layer()
 
-    vert_color.voronoi(script, target_layer=target_layer, source_layer=sample_layer, backward=True)
+    vert_color.voronoi(script, target_layer=target_layer, source_layer=sample_layer, backward=backward)
     select.vert_quality(script, min_quality=0.0, max_quality=thickness)
-    select.invert(script)
+    if backward:
+        select.invert(script)
     delete.selected(script)
     smooth.laplacian(script, iterations=3)
 

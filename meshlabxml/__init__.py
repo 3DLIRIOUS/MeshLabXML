@@ -18,5 +18,6 @@ from . import transfer
 from . import transform
 from . import util
 from . import vert_color
+from . import mp_func
 
 #from .color_names import color_name

@@ -2,6 +2,40 @@
 
 from . import util
 
+
+def all(script, face=True, vert=True):
+    """ Select all the faces of the current mesh
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        faces (bool): If True the filter will select all the faces.
+        verts (bool): If True the filter will select all the vertices.
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    filter_xml = ''.join([
+        '  <filter name="Select All">\n',
+        '    <Param name="allFaces" ',
+        'value="{}" '.format(str(face).lower()),
+        'description="DSelect all Faces" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="allVerts" ',
+        'value="{}" '.format(str(vert).lower()),
+        'description="Select all Vertices" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    return None
+
+
 def deselect(script, face=True, vert=True):
     """ Clear the current set of selected faces
 
@@ -302,6 +336,8 @@ def face_function(script, function='(fi == 0)'):
         fsel face selection (1 yes, 0 no)
 
     Args:
+        script: the FilterScript object or script filename to write
+            the filter] to.
         function (str): a boolean function that will be evaluated in order
             to select a subset of faces.
 
@@ -346,6 +382,8 @@ def vert_function(script, function='(q < 0)', strict_face_select=True):
         and all custom vertex attributes already defined by user.
 
     Args:
+        script: the FilterScript object or script filename to write
+            the filter] to.
         function (str): a boolean function that will be evaluated in order
             to select a subset of vertices. Example: (y > 0) and (ny > 0)
         strict_face_select (bool): if True a face is selected if ALL its
@@ -376,9 +414,32 @@ def vert_function(script, function='(q < 0)', strict_face_select=True):
     return None
 
 
+def cylindrical_vert(script, radius=1.0, strict_face_select=True, inside=True):
+    """Select all vertices within a cylindrical radius
+
+    Args:
+        radius (float): radius of the sphere
+        center_pt (3 coordinate tuple or list): center point of the sphere
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    if inside:
+        function = 'sqrt(x^2+y^2)<={}'.format(radius)
+    else:
+        function = 'sqrt(x^2+y^2)>={}'.format(radius)
+    vert_function(script, function=function,
+                  strict_face_select=strict_face_select)
+    return None
+
+
 def spherical(script, radius=1.0, center_pt=(0.0, 0.0, 0.0),
               strict_face_select=True):
-    """Select all verties within a spherical radius
+    """Select all vertices within a spherical radius
 
     Args:
         radius (float): radius of the sphere

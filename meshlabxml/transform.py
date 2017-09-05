@@ -6,7 +6,7 @@ import re
 
 from . import FilterScript
 from . import util
-from . import mp_atan2
+from . import mp_func
 
 def translate2(script, value=(0.0, 0.0, 0.0), center=False, freeze=True,
                all_layers=False):
@@ -75,7 +75,7 @@ def translate(script, value=(0.0, 0.0, 0.0)):
     # Convert value to list if it isn't already
     if not isinstance(value, list):
         value = list(value)
-    function(script,
+    vert_function(script,
              x_func='x+(%s)' % value[0],
              y_func='y+(%s)' % value[1],
              z_func='z+(%s)' % value[2])
@@ -200,19 +200,19 @@ def rotate(script, axis='z', angle=0.0):
     This is more accurate than the built-in version."""
     angle = math.radians(angle)
     if axis.lower() == 'x':
-        function(script,
+        vert_function(script,
                  x_func='x',
-                 y_func='y*cos(%s)-z*sin(%s)' % (angle, angle),
-                 z_func='y*sin(%s)+z*cos(%s)' % (angle, angle))
+                 y_func='y*cos({angle})-z*sin({angle})'.format(angle=angle),
+                 z_func='y*sin({angle})+z*cos({angle})'.format(angle=angle))
     elif axis.lower() == 'y':
-        function(script,
-                 x_func='z*sin(%s)+x*cos(%s)' % (angle, angle),
+        vert_function(script,
+                 x_func='z*sin({angle})+x*cos({angle})'.format(angle=angle),
                  y_func='y',
-                 z_func='z*cos(%s)-x*sin(%s)' % (angle, angle))
+                 z_func='z*cos({angle})-x*sin({angle})'.format(angle=angle))
     elif axis.lower() == 'z':
-        function(script,
-                 x_func='x*cos(%s)-y*sin(%s)' % (angle, angle),
-                 y_func='x*sin(%s)+y*cos(%s)' % (angle, angle),
+        vert_function(script,
+                 x_func='x*cos({angle})-y*sin({angle})'.format(angle=angle),
+                 y_func='x*sin({angle})+y*cos({angle})'.format(angle=angle),
                  z_func='z')
     else:
         print('Axis name is not valid; exiting ...')
@@ -327,7 +327,7 @@ def scale(script, value=1.0):
     if len(value) == 1:
         value = [value[0], value[0], value[0]]"""
     value = util.make_list(value, 3)
-    function(script,
+    vert_function(script,
              x_func='x*(%s)' % value[0],
              y_func='y*(%s)' % value[1],
              z_func='z*(%s)' % value[2])
@@ -389,7 +389,6 @@ def function(script, x_func='x', y_func='y', z_func='z'):
         No impacts
 
     MeshLab versions:
-        2016.12
         1.3.4BETA
     """
     filter_xml = ''.join([
@@ -410,6 +409,86 @@ def function(script, x_func='x', y_func='y', z_func='z'):
         'type="RichString" ',
         '/>\n',
         '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    return None
+
+
+def vert_function(script, x_func='x', y_func='y', z_func='z', selected=False):
+    """Geometric function using muparser lib to generate new Coordinates
+
+    You can change x, y, z for every vertex according to the function specified.
+
+    See help(mlx.muparser_ref) for muparser reference documentation.
+    It's possible to use the following per-vertex variables in the expression:
+
+    Variables (per vertex):
+        x, y, z (coordinates)
+        nx, ny, nz (normal)
+        r, g, b, a (color)
+        q (quality)
+        rad (radius)
+        vi (vertex index)
+        vtu, vtv (texture coordinates)
+        ti (texture index)
+        vsel (is the vertex selected? 1 yes, 0 no)
+        and all custom vertex attributes already defined by user.
+
+    Args:
+        x_func (str): function to generate new coordinates for x
+        y_func (str): function to generate new coordinates for y
+        z_func (str): function to generate new coordinates for z
+        selected (bool): if True, only affects selected vertices (ML ver 2016.12 & up)
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    if script.ml_version == '1.3.4BETA':
+        filter_xml = ''.join([
+            '  <filter name="Geometric Function">\n',
+            '    <Param name="x" ',
+            'value="{}" '.format(str(x_func).replace('<', '&lt;')),
+            'description="func x = " ',
+            'type="RichString" ',
+            '/>\n',
+            '    <Param name="y" ',
+            'value="{}" '.format(str(y_func).replace('<', '&lt;')),
+            'description="func y = " ',
+            'type="RichString" ',
+            '/>\n',
+            '    <Param name="z" ',
+            'value="{}" '.format(str(z_func).replace('<', '&lt;')),
+            'description="func z = " ',
+            'type="RichString" ',
+            '/>\n',
+            '  </filter>\n'])
+    else:
+        filter_xml = ''.join([
+            '  <filter name="Per Vertex Geometric Function">\n',
+            '    <Param name="x" ',
+            'value="{}" '.format(str(x_func).replace('<', '&lt;')),
+            'description="func x = " ',
+            'type="RichString" ',
+            '/>\n',
+            '    <Param name="y" ',
+            'value="{}" '.format(str(y_func).replace('<', '&lt;')),
+            'description="func y = " ',
+            'type="RichString" ',
+            '/>\n',
+            '    <Param name="z" ',
+            'value="{}" '.format(str(z_func).replace('<', '&lt;')),
+            'description="func z = " ',
+            'type="RichString" ',
+            '/>\n',
+            '    <Param name="onselected" ',
+            'value="%s" ' % str(selected).lower(),
+            'description="only on selection" ',
+            'type="RichBool" ',
+            '/>\n',
+            '  </filter>\n'])
     util.write_filter(script, filter_xml)
     return None
 
@@ -441,7 +520,7 @@ def function_cyl_co(script, r_func='r', theta_func='theta', z_func='z'):
     if isinstance(script, FilterScript) and script.ml_version >= '2016.12':
         theta = 'atan2(y, x)'
     else:
-        theta = mp_atan2('y', 'x')
+        theta = mp_func.mp_atan2('y', 'x')
 
     # Use re matching to match whole word; this prevents matching
     # 'sqrt' and 'rint' when replacing 'r'
@@ -452,7 +531,7 @@ def function_cyl_co(script, r_func='r', theta_func='theta', z_func='z'):
     x_func = '(r)*cos(theta)'.replace('r', r_func).replace('theta', theta_func)
     y_func = '(r)*sin(theta)'.replace('r', r_func).replace('theta', theta_func)
 
-    function(script, x_func, y_func, z_func)
+    vert_function(script, x_func, y_func, z_func)
     return None
 
 
@@ -550,7 +629,7 @@ def wrap2cylinder(script, radius=1, pitch=0, taper=0, pitch_func=None,
     taper = change in r over z. E.g. a value of 0.5 will shrink r by 0.5 for every z length of 1
 
     """
-    """function(s=s, x='(%s+y-taper)*sin(x/(%s+y))' % (radius, radius),
+    """vert_function(s=s, x='(%s+y-taper)*sin(x/(%s+y))' % (radius, radius),
                      y='(%s+y)*cos(x/(%s+y))' % (radius, radius),
                      z='z-%s*x/(2*%s*(%s+y))' % (pitch, pi, radius))"""
     if pitch_func is None:
@@ -572,7 +651,7 @@ def wrap2cylinder(script, radius=1, pitch=0, taper=0, pitch_func=None,
         'radius', str(radius)).replace('taper_func', str(taper_func))
     z_func = 'z+(pitch_func)'.replace('pitch_func', str(pitch_func))
 
-    function(script, x_func, y_func, z_func)
+    vert_function(script, x_func, y_func, z_func)
     return None
 
 
@@ -613,7 +692,7 @@ def emboss_sphere(script, radius=1, radius_limit=None, angle=None):
 
     #z_func='sqrt(radius-x^2-y^2)-radius+z'.replace('radius', str(radius))
     # z_func='sqrt(%s-x^2-y^2)-%s+z' % (sphere_radius**2, sphere_radius))
-    function(script=script, z_func=z_func)
+    vert_function(script=script, z_func=z_func)
     return None
 
 
@@ -632,7 +711,7 @@ def bend(script, radius=1, pitch=0, taper=0, angle=0, straght_start=True,
     # larger limit
     angle = math.radians(angle)
     segment = radius * angle
-    """function(s=s, x='if(x<%s and x>-%s, (%s+y)*sin(x/%s), (%s+y)*sin(%s/%s)+(x-%s)*cos(%s/%s))'
+    """vert_function(s=s, x='if(x<%s and x>-%s, (%s+y)*sin(x/%s), (%s+y)*sin(%s/%s)+(x-%s)*cos(%s/%s))'
                         % (segment, segment,  radius, radius,  radius, segment, radius, segment, segment, radius),
                      y='if(x<%s*%s/2 and x>-%s*%s/2, (%s+y)*cos(x/%s), (%s+y)*cos(%s)-(x-%s*%s)*sin(%s))'
                         % (radius, angle, radius, angle, radius, radius, radius, angle/2, radius, angle/2, angle/2),"""
@@ -731,8 +810,44 @@ def bend(script, radius=1, pitch=0, taper=0, angle=0, straght_start=True,
     else:
         z_func = 'z-%s*x/(2*%s*%s)' % (pitch, math.pi, radius)
     """
-    function(script, x_func=x_func, y_func=y_func, z_func=z_func)
+    vert_function(script, x_func=x_func, y_func=y_func, z_func=z_func)
     return None
+
+
+def deform2curve(script, curve=mp_func.torus_knot('t'), step=0.001):
+    """ Deform a mesh along a parametric curve function
+
+    Provide a parametric curve function with z as the parameter. This will
+    deform the xy cross section of the mesh along the curve as z increases.
+
+    Source: http://blackpawn.com/texts/pqtorus/
+
+    Methodology:
+    T  = P' - P
+    N1 = P' + P
+    B  = T x N1
+    N  = B x T
+
+    newPoint = point.x*N + point.y*B
+
+    """
+    curve_step = []
+    for idx, val in enumerate(curve):
+        curve[idx] = val.replace('t', 'z')
+        curve_step.append(val.replace('t', 'z+{}'.format(step)))
+
+    tangent = mp_func.v_subtract(curve_step, curve)
+    normal1 = mp_func.v_add(curve_step, curve)
+    bee = mp_func.v_cross(tangent, normal1)
+    normal = mp_func.v_cross(bee, tangent)
+    bee = mp_func.v_normalize(bee)
+    normal = mp_func.v_normalize(normal)
+
+    new_point = mp_func.v_add(mp_func.v_multiply('x', normal), mp_func.v_multiply('y', bee))
+    function = mp_func.v_add(curve, new_point)
+
+    vert_function(script, x_func=function[0], y_func=function[1], z_func=function[2])
+    return function
 
 
 # TODO: add function to round mesh to desired tolerance

@@ -310,3 +310,58 @@ def mesh_element(script, sample_num=1000, element='VERT'):
     if isinstance(script, FilterScript):
         script.add_layer('Sampled Mesh')
     return None
+
+
+def clustered_vert(script, cell_size=1.0, strategy='AVERAGE', selected=False):
+    """ "Create a new layer populated with a subsampling of the vertexes of the
+        current mesh
+
+    The subsampling is driven by a simple one-per-gridded cell strategy.
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        cell_size (float): The size of the cell of the clustering grid. Smaller the cell finer the resulting mesh. For obtaining a very coarse mesh use larger values.
+        strategy (enum 'AVERAGE' or 'CENTER'): &lt;b>Average&lt;/b>: for each cell we take the average of the sample falling into. The resulting point is a new point.&lt;br>&lt;b>Closest to center&lt;/b>: for each cell we take the sample that is closest to the center of the cell. Choosen vertices are a subset of the original ones.
+        selected (bool): If true only for the filter is applied only on the selected subset of the mesh.
+
+    Layer stack:
+        Creates new layer 'Cluster Samples'. Current layer is changed to the new
+            layer.
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    if strategy.lower() == 'average':
+        strategy_num = 0
+    elif strategy.lower() == 'center':
+        strategy_num = 1
+
+    filter_xml = ''.join([
+        '  <filter name="Clustered Vertex Subsampling">\n',
+        '    <Param name="Threshold" ',
+        'value="{}" '.format(cell_size),
+        'description="Cell Size" ',
+        'min="0" ',
+        'max="1000" ',
+        'type="RichAbsPerc" ',
+        '/>\n',
+        '    <Param name="Sampling" ',
+        'value="{:d}" '.format(strategy_num),
+        'description="Representative Strategy:" ',
+        'enum_val0="Average" ',
+        'enum_val1="Closest to center" ',
+        'enum_cardinality="2" ',
+        'type="RichEnum" ',
+        '/>\n',
+        '    <Param name="Selected" ',
+        'value="{}" '.format(str(selected).lower()),
+        'description="Selected" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('Cluster Samples')
+    return None

@@ -11,7 +11,10 @@ from . import clean
 from . import layers
 
 def cube(script, size=1.0, center=False, color=None):
-    """Create a cube primitive"""
+    """Create a cube primitive
+
+    Note that this is made of 6 quads, not triangles
+    """
 
     """# Convert size to list if it isn't already
     if not isinstance(size, list):
@@ -295,7 +298,7 @@ def grid(script, size=1.0, x_segments=1, y_segments=1, center=False,
 
     """This is to work around a bug in MeshLab whereby the Grid Generator does not
     create zero values for z. Ref bug #458: https://sourceforge.net/p/meshlab/bugs/458/"""
-    transform.function(script, z_func='rint(z)')
+    transform.vert_function(script, z_func='rint(z)')
 
     """Note that the "center" parameter in the mlx script does not actually
     center the square, not sure what it is doing. Instead this is set to false,
@@ -398,7 +401,7 @@ def cylinder_open_hires(script, height=1.0, radius=1, diameter=None,
     return None
 
 
-def cube_open_hires(script, size=1.0, x_segments=1, y_segments=1, z_segments=1,
+def cube_open_hires_old(script, size=1.0, x_segments=1, y_segments=1, z_segments=1,
                     center=False, color=None):
     """ Creates a square open tube, e.g. a box with no top or bottom.
 
@@ -445,6 +448,61 @@ def cube_open_hires(script, size=1.0, x_segments=1, y_segments=1, z_segments=1,
     return None
 
 
+def cube_open_hires(script, size=1.0, x_segments=1, y_segments=1, z_segments=1,
+                    center=False, color=None):
+    """ Creates a square open tube, e.g. a box with no top or bottom.
+
+    Useful if you want to wrap it around and join the open ends together, forming a torus.
+    """
+    """# Convert size to list if it isn't already
+    if not isinstance(size, list):
+        size = list(size)
+    # If a single value was supplied use it for all 3 axes
+    if len(size) == 1:
+        size = [size[0], size[0], size[0]]"""
+    size = util.make_list(size, 3)
+
+    # Make big grid and bend
+    grid(script, [2*(x_segments + y_segments), z_segments],
+         x_segments=2*(x_segments + y_segments),
+         y_segments=z_segments)
+    transform.rotate(script, 'x', 90)
+    # Bend 3 times into a rectangular tube
+    if script.ml_version == '1.3.4BETA': # muparser version: 1.3.2
+        transform.vert_function(script,
+            x_func='if(x>{x_size}, {x_size}, x)'.format(x_size=x_segments),
+            y_func='if(x>{x_size}, (x-{x_size}), y)'.format(x_size=x_segments),
+            z_func='z')
+        transform.vert_function(script,
+            x_func='if(y>{y_size}, ({y_size}-y+{x_size}), x)'.format(x_size=x_segments, y_size=y_segments),
+            y_func='if(y>{y_size}, {y_size}, y)'.format(y_size=y_segments),
+            z_func='z')
+        transform.vert_function(script,
+            x_func='if(x<0, 0, x)',
+            y_func='if(x<0, ({y_size}+x), y)'.format(y_size=y_segments),
+            z_func='z')
+    else: # muparser version: 2.2.5
+        transform.vert_function(script,
+            x_func='(x>{x_size} ? {x_size} : x)'.format(x_size=x_segments),
+            y_func='(x>{x_size} ? (x-{x_size}) : y)'.format(x_size=x_segments),
+            z_func='z')
+        transform.vert_function(script,
+            x_func='(y>{y_size} ? ({y_size}-y+{x_size}) : x)'.format(x_size=x_segments, y_size=y_segments),
+            y_func='(y>{y_size} ? {y_size} : y)'.format(y_size=y_segments),
+            z_func='z')
+        transform.vert_function(script,
+            x_func='(x<0 ? 0 : x)',
+            y_func='(x<0 ? ({y_size}+x) : y)'.format(y_size=y_segments),
+            z_func='z')
+    clean.merge_vert(script, threshold=0.00002)
+    transform.scale(script, [size[0]/x_segments, size[1]/y_segments, size[2]/z_segments])
+    if center:
+        transform.translate(script, [-size[0] / 2, -size[1] / 2, -size[2] / 2])
+    if color is not None:
+        vert_color.function(script, color=color)
+    return None
+
+
 def plane_hires_edges(script, size=1.0, x_segments=1, y_segments=1,
                       center=False, color=None):
     """ Creates a plane with a specified number of vertices
@@ -458,26 +516,26 @@ def plane_hires_edges(script, size=1.0, x_segments=1, y_segments=1,
     grid(script, size=[x_segments + y_segments - 1, 1],
          x_segments=(x_segments + y_segments - 1), y_segments=1)
     # Deform left side
-    transform.function(
+    transform.vert_function(
         script,
         x_func='if((y>0) and (x<%s),0,x)' % (y_segments),
         y_func='if((y>0) and (x<%s),(x+1)*%s,y)' % (
             y_segments, size[1] / y_segments))
     # Deform top
-    transform.function(
+    transform.vert_function(
         script,
         x_func='if((y>0) and (x>=%s),(x-%s+1)*%s,x)' % (
             y_segments, y_segments, size[0] / x_segments),
         y_func='if((y>0) and (x>=%s),%s,y)' % (y_segments, size[1]))
     # Deform right side
-    transform.function(
+    transform.vert_function(
         script,
         x_func='if((y<.00001) and (x>%s),%s,x)' % (
             x_segments, size[0]),
         y_func='if((y<.00001) and (x>%s),(x-%s)*%s,y)' % (
             x_segments, x_segments, size[1] / y_segments))
     # Deform bottom
-    transform.function(
+    transform.vert_function(
         script,
         x_func='if((y<.00001) and (x<=%s) and (x>0),(x)*%s,x)' % (
             x_segments, size[0] / x_segments),
