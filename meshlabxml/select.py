@@ -351,7 +351,7 @@ def face_function(script, function='(fi == 0)'):
     filter_xml = ''.join([
         '  <filter name="Conditional Face Selection">\n',
         '    <Param name="condSelect" ',
-        'value="{}" '.format(str(function).replace('<', '&lt;')),
+        'value="{}" '.format(str(function).replace('&', '&amp;').replace('<', '&lt;')),
         'description="boolean function" ',
         'type="RichString" ',
         '/>\n',
@@ -388,7 +388,8 @@ def vert_function(script, function='(q < 0)', strict_face_select=True):
             to select a subset of vertices. Example: (y > 0) and (ny > 0)
         strict_face_select (bool): if True a face is selected if ALL its
             vertices are selected. If False a face is selected if at least
-            one of its vertices is selected.
+            one of its vertices is selected. ML v1.3.4BETA only; this is
+            ignored in 2016.12
 
     Layer stack:
         No impacts
@@ -397,18 +398,25 @@ def vert_function(script, function='(q < 0)', strict_face_select=True):
         2016.12
         1.3.4BETA
     """
+    if script.ml_version == '1.3.4BETA':
+        strict_select = ''.join([
+            '    <Param name="strictSelect" ',
+            'value="{}" '.format(str(strict_face_select).lower()),
+            'description="Strict face selection" ',
+            'type="RichBool" ',
+            '/>\n',
+            ])
+    else:
+        strict_select = ''
+
     filter_xml = ''.join([
         '  <filter name="Conditional Vertex Selection">\n',
         '    <Param name="condSelect" ',
-        'value="{}" '.format(str(function).replace('<', '&lt;')),
+        'value="{}" '.format(str(function).replace('&', '&amp;').replace('<', '&lt;')),
         'description="boolean function" ',
         'type="RichString" ',
         '/>\n',
-        '    <Param name="strictSelect" ',
-        'value="{}" '.format(str(strict_face_select).lower()),
-        'description="Strict face selection" ',
-        'type="RichBool" ',
-        '/>\n',
+        strict_select,
         '  </filter>\n'])
     util.write_filter(script, filter_xml)
     return None
