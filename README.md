@@ -9,11 +9,11 @@ MLX is named after the .mlx file extension for MeshLab script files, however the
 
 ## Installation
 
-MLX can be installed via PyPI and pip:
+MLX can be installed via [PyPI](https://pypi.python.org/pypi/MeshLabXML) and pip:
 
-    pip --install meshlabxml
+    pip install meshlabxml
 
-The released PyPI version may lag begind this git repository somewhat, so install from git if you want the latest and greatest. MLX may also be installed and run in other Python environments, such as [Blender](https://www.blender.org/). Note that Blender does not come with pip by by default, however it can be easily installed using [get-pip](https://bootstrap.pypa.io/get-pip.py).
+The released PyPI version may lag behind this git repository somewhat, so install from git if you want the latest and greatest. MLX may also be installed and run in other Python environments, such as [Blender](https://www.blender.org/). Note that Blender does not come with pip by default, however it can be easily installed using [get-pip](https://bootstrap.pypa.io/get-pip.py).
 
 ##  Platforms & Versions
 
@@ -23,15 +23,15 @@ The released PyPI version may lag begind this git repository somewhat, so instal
 
 *MeshLab:* MLX is known to work on MeshLab versions 1.34BETA (64 bit Windows only) and 2016.12. As of the time of this writing, not all functions have been tested with 2016.12 yet, so please open an issue if you find a bug.
 
-*MLX versioning:* PyPI releases are numbered by the year and month of release, e.g. 2017.9. A letter may be added on the end ("a", "b", "c", etc) if there is more than one release in a month.
+*MLX version numbers:* PyPI releases are numbered by the year and month of release, e.g. 2017.9. A letter may be added on the end ("a", "b", "c", etc) if there is more than one release in a month.
 
 ## Filters & Functions
 
 MLX contains a fairly large subset of the filters available in MeshLab. Additional filters will be added over time, generally on an "as I need them" basis. If you need a filter that is not yet incorporated, please open an issue.
 
-Many of the functions below are a direct implementation of a MeshLab filter. Others are created from a combination of other functions, or implement new functionality using the muparser function filters.
+Many of the functions below are a direct implementation of a MeshLab filter. Others are created from a combination of other functions, or implement new functionality using the [muparser](http://beltoforion.de/article.php?a=muparser) function filters.
 
-Documentation for most filters is available by using "help" within a Python shell, although there are many that still need to be documented. In addition, in many cases the documentation is taken directly from the same MeshLab filter, which is not always sufficient to understand the function if you are not already familiar with how it works.
+Documentation for most filters is available by using "help" within a Python shell, although there are many that still need to be documented. In addition, in many cases the documentation is taken directly from the MeshLab filter, which is not always sufficient to understand the function if you are not already familiar with how it works.
 
 *mlx* - functions to create and run scripts, determine inputs & outputs, etc.
  * FilterScript - Main class to create scripts
@@ -187,7 +187,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * voronoi
  * cyclic_rainbow
 
-*mlx.mp_func* - functions to work with [muparser](http://beltoforion.de/article.php?a=muparser) filter functions, this is mostly a vector math library
+*mlx.mp_func* - functions to work with muparser filter functions, this is mostly a vector math library
  * muparser_ref
  * v_cross
  * v_dot
@@ -203,7 +203,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * vq_function
  * fq_function
 
-*mlx.files* - functions that operate directly on files, ususally to measure them
+*mlx.files* - functions that operate directly on files, usually to measure them
  * measure_aabb
  * measure_section
  * measure_geometry
@@ -216,13 +216,13 @@ Documentation for most filters is available by using "help" within a Python shel
 
 For production MLX can run completely headless, however while developing new scripts some visual feedback may be helpful.
 
-MLX does not (yet!) have a slick integrated GUI like OpenSCAD or Blender, however you can approximate one by arranging several programs into a useful layout, as shown below. This can be accomplished pretty easily in modern versions of Windows using the Windows key and the arrow keys.
+MLX does not have an integrated GUI like OpenSCAD or Blender, however you can simulate one by arranging several programs into a useful layout, such as shown below. This can be accomplished pretty easily in modern versions of Windows using the Windows key and the arrow keys.
 
 Generally you will want a text editor, a console and of course MeshLab itself. The general script development workflow may consist of the following steps
- 1. Edit script in text editor
+ 1. Write & edit script in text editor
  2. Run script in console and view meshlabserver output
- 3. Load output in MeshLab. Use the "reload" button to releoad the mesh after any changes are made.
- 4. Repeat ad nauseum
+ 3. Load output in MeshLab. Use the "reload" button to reload the mesh after any changes are made.
+ 4. Repeat ad nauseam
 
 ![workflow_2016 12](https://user-images.githubusercontent.com/15272764/30234194-9dd84f10-94c0-11e7-89a3-cd5d0acb598f.png)
 
@@ -246,6 +246,8 @@ Example #1: Create an orange cube and apply some transformations
     mlx.transform.rotate(orange_cube, axis='y', angle=45)
     mlx.transform.translate(orange_cube, value=[0, 5.0, 0])
     orange_cube.run_script()
+
+  Output:
 
 ![orange_cube](https://user-images.githubusercontent.com/15272764/30234857-4214198c-94c7-11e7-80b4-e0d73ee60126.png)
 
@@ -289,7 +291,7 @@ Check out the "examples" directory for more complex examples.
 
 ## Logo
 
-The MLX logo is a rainbow colored quatrefoil torus knot with vornoi meshing. This model is created entirely using MLX; it's source code is included in the "examples" directory.  This is a moderately complex script that should give you an idea of some of the things that MLX can do; it makes heavy use of the powerful muparser functions.
+The MLX logo is a rainbow colored quatrefoil torus knot with Voronoi meshing. This model is created entirely using MLX; it's source code is included in the "examples" directory.  This is a moderately complex script that should give you an idea of some of the things that MLX can do; it makes heavy use of the powerful muparser functions.
 
 
 ## Tips
