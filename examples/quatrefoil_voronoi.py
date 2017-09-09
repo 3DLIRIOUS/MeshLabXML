@@ -206,7 +206,7 @@ def quatrefoil():
     mlx.smooth.laplacian(quatrefoil_voronoi_color, iterations=3)
 
     # Transfer colors from original curve
-    mlx.transfer.vert_attributes_2_meshes(
+    mlx.transfer.vert_attr_2_meshes(
         quatrefoil_voronoi_color, source_mesh=0, target_mesh=1, color=True,
         max_distance=7)
     mlx.layers.delete_lower(quatrefoil_voronoi_color)

@@ -110,11 +110,11 @@ def mesh2fc(script, all_visible_layers=False):
     return None
 
 
-def vert_attributes_2_meshes(script, source_mesh=0, target_mesh=1,
+def vert_attr_2_meshes(script, source_mesh=0, target_mesh=1,
                              geometry=False, normal=False, color=True,
                              quality=False, selection=False,
                              quality_distance=False, max_distance=0.5):
-    """Vertex Attribute Tranfer (between 2 meshes)
+    """Vertex Attribute Transfer (between 2 meshes)
 
     Transfer the chosen per-vertex attributes from one mesh to another. Useful to transfer attributes to different representations of the same object. For each vertex of the target mesh the closest point (not vertex!) on the source mesh is computed, and the requested interpolated attributes from that source point are copied into the target vertex.
 
@@ -190,11 +190,11 @@ def vert_attributes_2_meshes(script, source_mesh=0, target_mesh=1,
     return None
 
 
-def color2tex_2_meshes(script, source_mesh=0, target_mesh=1, attribute=0,
-                       max_distance=0.5, tex_name='TEMP3D_texture.png',
-                       tex_width=1024, tex_height=1024,
-                       overwrite_tex=True, assign_tex=False,
-                       fill_tex=True):
+def vert_attr2tex_2_meshes(script, source_mesh=0, target_mesh=1, attribute=0,
+                           max_distance=0.5, tex_name='TEMP3D_texture.png',
+                           tex_width=1024, tex_height=1024,
+                           overwrite_tex=True, assign_tex=False,
+                           fill_tex=True):
     """Transfer Vertex Attributes to Texture (between 2 meshes)
 
     Args:

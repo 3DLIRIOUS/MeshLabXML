@@ -36,7 +36,7 @@ def all(script, face=True, vert=True):
     return None
 
 
-def deselect(script, face=True, vert=True):
+def none(script, face=True, vert=True):
     """ Clear the current set of selected faces
 
     Args:
@@ -422,7 +422,7 @@ def vert_function(script, function='(q < 0)', strict_face_select=True):
     return None
 
 
-def cylindrical_vert(script, radius=1.0, strict_face_select=True, inside=True):
+def cylindrical_vert(script, radius=1.0, inside=True):
     """Select all vertices within a cylindrical radius
 
     Args:
@@ -440,13 +440,11 @@ def cylindrical_vert(script, radius=1.0, strict_face_select=True, inside=True):
         function = 'sqrt(x^2+y^2)<={}'.format(radius)
     else:
         function = 'sqrt(x^2+y^2)>={}'.format(radius)
-    vert_function(script, function=function,
-                  strict_face_select=strict_face_select)
+    vert_function(script, function=function)
     return None
 
 
-def spherical(script, radius=1.0, center_pt=(0.0, 0.0, 0.0),
-              strict_face_select=True):
+def spherical(script, radius=1.0, center_pt=(0.0, 0.0, 0.0)):
     """Select all vertices within a spherical radius
 
     Args:
@@ -462,6 +460,5 @@ def spherical(script, radius=1.0, center_pt=(0.0, 0.0, 0.0),
     """
     function = 'sqrt((x-{})^2+(y-{})^2+(z-{})^2)<={}'.format(
         center_pt[0], center_pt[1], center_pt[2], radius)
-    vert_function(script, function=function,
-                  strict_face_select=strict_face_select)
+    vert_function(script, function=function)
     return None

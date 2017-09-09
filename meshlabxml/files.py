@@ -185,7 +185,7 @@ def polylinesort(fbasename=None, log=None):
     return None
 
 
-def measure_geometry(fbasename=None, log=None):
+def measure_geometry(fbasename=None, log=None, ml_version='1.3.4BETA'):
     """Measures mesh geometry. Also runs measure_aabb"""
     script = 'TEMP3D_measure_geometry.mlx'
     ml_log = 'TEMP3D_measure_geometry_log.txt'
@@ -215,7 +215,7 @@ def measure_geometry(fbasename=None, log=None):
             '***Parsed Geometry Values for file "%s":\n' %
             fbasename)
         log_file.close()
-    geometry = compute.parse_geometry(ml_log, log)
+    geometry = compute.parse_geometry(ml_log, log, ml_version=ml_version)
     return aabb, geometry
 
 
@@ -266,7 +266,7 @@ def measure_topology(fbasename=None, log=None):
     return topology
 
 
-def measure_all(fbasename=None, log=None):
+def measure_all(fbasename=None, log=None, ml_version='1.3.4BETA'):
     """Measures mesh geometry, aabb and topology."""
     script = 'TEMP3D_measure_gAndT.mlx'
     ml_log = 'TEMP3D_measure_gAndT_log.txt'
@@ -297,7 +297,7 @@ def measure_all(fbasename=None, log=None):
             '***Parsed Geometry Values for file "%s":\n' %
             fbasename)
         log_file.close()
-    geometry = compute.parse_geometry(ml_log, log)
+    geometry = compute.parse_geometry(ml_log, log, ml_version=ml_version)
 
     if log is not None:
         log_file = open(log, 'a')

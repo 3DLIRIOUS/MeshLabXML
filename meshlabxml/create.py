@@ -23,8 +23,12 @@ def cube(script, size=1.0, center=False, color=None):
     if len(size) == 1:
         size = [size[0], size[0], size[0]]"""
     size = util.make_list(size, 3)
+    if script.ml_version == '1.3.4BETA':
+        filter_name = 'Box'
+    else:
+        filter_name = 'Box/Cube'
     filter_xml = ''.join([
-        '  <filter name="Box">\n',
+        '  <filter name="{}">\n'.format(filter_name),
         '    <Param name="size" ',
         'value="1.0" ',
         'description="Scale factor" ',
