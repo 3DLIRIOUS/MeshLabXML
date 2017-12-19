@@ -415,7 +415,7 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
                 try:
                     cmd += ' %s' % output_mask[index]
                 except IndexError:  # If output_mask can't be found use defaults
-                    cmd += default_output_mask(val)
+                    cmd += default_output_mask(val, ml_version=script.ml_version)
         if script is not None:
             cmd += ' -s "%s"' % script
     if log is not None:
@@ -552,7 +552,7 @@ def find_texture_files(fbasename, log=None):
     return texture_files, texture_files_unique, material_file
 
 
-def default_output_mask(file_out, texture=True):
+def default_output_mask(file_out, texture=True, ml_version):
     """
     Set default output mask options based on file extension
     Note: v1.34BETA changed -om switch to -m
@@ -570,7 +570,7 @@ def default_output_mask(file_out, texture=True):
      wn -> wedge normals
      wt -> wedge texture coords
     """
-    if ML_VERSION < '1.3.4':
+    if ml_version < '1.3.4':
         om_flag = '-om'
     else:
         om_flag = '-m'
