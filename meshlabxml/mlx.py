@@ -240,7 +240,7 @@ class FilterScript(object):
 
         run(script=script_file, log=log, ml_log=ml_log,
             mlp_in=self.mlp_in, mlp_out=mlp_out, overwrite=overwrite,
-            file_in=self.file_in, file_out=file_out, output_mask=output_mask)
+            file_in=self.file_in, file_out=file_out, output_mask=output_mask, ml_version=self.ml_version)
 
         # Parse output
         # TODO: record which layer this is associated with?
@@ -310,7 +310,7 @@ def handle_error(program_name, cmd, log=None):
 
 def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
         mlp_in=None, mlp_out=None, overwrite=False, file_in=None,
-        file_out=None, output_mask=None, cmd=None):
+        file_out=None, output_mask=None, cmd=None, ml_version='1.3.4'):
     """Run meshlabserver in a subprocess.
 
     Args:
@@ -415,7 +415,7 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
                 try:
                     cmd += ' %s' % output_mask[index]
                 except IndexError:  # If output_mask can't be found use defaults
-                    cmd += default_output_mask(val, ml_version=script.ml_version)
+                    cmd += default_output_mask(val, ml_version=ml_version)
         if script is not None:
             cmd += ' -s "%s"' % script
     if log is not None:
