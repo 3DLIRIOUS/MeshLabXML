@@ -552,7 +552,7 @@ def find_texture_files(fbasename, log=None):
     return texture_files, texture_files_unique, material_file
 
 
-def default_output_mask(file_out, texture=True, ml_version):
+def default_output_mask(file_out, texture=True, ml_version='1.3.4'):
     """
     Set default output mask options based on file extension
     Note: v1.34BETA changed -om switch to -m
