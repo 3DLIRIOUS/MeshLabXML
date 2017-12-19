@@ -210,9 +210,20 @@ def vert_attr2tex_2_meshes(script, source_mesh=0, target_mesh=1, attribute=0,
         overwrite_tex (bool): If target mesh has a texture will be overwritten (with provided texture dimension)
         assign_tex (bool): Assign the newly created texture to target mesh
         fill_tex (bool): If enabled the unmapped texture space is colored using a pull push filling algorithm, if false is set to black
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
+    if script.ml_version == '1.3.4BETA':
+        filter_name = 'Transfer Vertex Attributes to Texture (between 2 meshes)'
+    else:
+        filter_name = 'Transfer: Vertex Attributes to Texture (1 or 2 meshes)'
     filter_xml = ''.join([
-        '  <filter name="Transfer Vertex Attributes to Texture (between 2 meshes)">\n',
+        '  <filter name="{}">\n'.format(filter_name),
         '    <Param name="sourceMesh" ',
         'value="%d" ' % source_mesh,
         'description="Source Mesh" ',

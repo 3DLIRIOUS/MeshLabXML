@@ -193,7 +193,7 @@ class FilterScript(object):
         """ Delete mesh layer """
         del self.layer_stack[layer_num]
         # Adjust current layer if needed
-        if layer_num <= self.current_layer():
+        if layer_num < self.current_layer():
             self.set_current_layer(self.current_layer() - 1)
         return None
 

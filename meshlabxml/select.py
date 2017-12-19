@@ -328,12 +328,12 @@ def face_function(script, function='(fi == 0)'):
         r0, g0, b0, a0, etc. for vertex color
         q0, q1, q2 for quality
         wtu0, wtv0, wtu1, wtv1, wtu2, wtv2 (per wedge texture coordinates)
-        ti face texture index
-        vsel0, vsel1, vsel2 for vertex selection (1 yes, 0 no)
-        fr, fg, fb, fa for face color
-        fq for face quality
-        fnx, fny, fnz for face normal
-        fsel face selection (1 yes, 0 no)
+        ti for face texture index (>= ML2016.12)
+        vsel0, vsel1, vsel2 for vertex selection (1 yes, 0 no) (>= ML2016.12)
+        fr, fg, fb, fa for face color (>= ML2016.12)
+        fq for face quality (>= ML2016.12)
+        fnx, fny, fnz for face normal (>= ML2016.12)
+        fsel face selection (1 yes, 0 no) (>= ML2016.12)
 
     Args:
         script: the FilterScript object or script filename to write
@@ -389,7 +389,7 @@ def vert_function(script, function='(q < 0)', strict_face_select=True):
         strict_face_select (bool): if True a face is selected if ALL its
             vertices are selected. If False a face is selected if at least
             one of its vertices is selected. ML v1.3.4BETA only; this is
-            ignored in 2016.12
+            ignored in 2016.12. In 2016.12 only vertices are selected.
 
     Layer stack:
         No impacts
@@ -444,7 +444,7 @@ def cylindrical_vert(script, radius=1.0, inside=True):
     return None
 
 
-def spherical(script, radius=1.0, center_pt=(0.0, 0.0, 0.0)):
+def spherical_vert(script, radius=1.0, center_pt=(0.0, 0.0, 0.0)):
     """Select all vertices within a spherical radius
 
     Args:

@@ -31,7 +31,7 @@ def hausdorff_distance(script, sampled_layer=1, target_layer=0,
         sample_faux_edge (bool): see sample_vert
         sample_face (bool): see sample_vert
         sample_num (int): The desired number of samples. It can be smaller or
-            larger than the mesh size, and according to the choosed sampling
+            larger than the mesh size, and according to the chosen sampling
             strategy it will try to adapt.
         maxdist (int): Sample points for which we do not find anything within
             this distance are rejected and not considered neither for averaging
