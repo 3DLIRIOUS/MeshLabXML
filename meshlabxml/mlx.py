@@ -95,8 +95,12 @@ class FilterScript(object):
         self.mlp_in = mlp_in
         self.__no_file_in = False
         self.file_out = file_out
+        self.geometry = compute.default_geometry()
+        self.topology = compute.default_topology()
+        self.hausdorff_distance = compute.default_hausdorff_distance()
         self.parse_geometry = False
         self.parse_topology = False
+        self.parse_hausdorff = False
         # Process input files
         # Process project files first
 
@@ -229,7 +233,7 @@ class FilterScript(object):
             self.save_to_file(temp_script_file.name)
             script_file = temp_script_file.name
 
-        if (self.parse_geometry or self.parse_topology) and (ml_log is None):
+        if (self.parse_geometry or self.parse_topology or self.parse_hausdorff) and (ml_log is None):
             # create temp ml_log
             temp_ml_log = True
             ml_log_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
@@ -248,6 +252,8 @@ class FilterScript(object):
             self.geometry = compute.parse_geometry(ml_log, log)
         if self.parse_topology:
             self.topology = compute.parse_topology(ml_log, log)
+        if self.parse_hausdorff:
+            self.hausdorff_distance = compute.parse_hausdorff(ml_log, log)
 
         # Delete temp files
         if self.__no_file_in:
