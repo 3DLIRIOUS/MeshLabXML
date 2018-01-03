@@ -210,7 +210,7 @@ class FilterScript(object):
         script_file_descriptor.close()
 
     def run_script(self, log=None, ml_log=None, mlp_out=None, overwrite=False,
-                   file_out=None, output_mask=None, script_file=None):
+                   file_out=None, output_mask=None, script_file=None, print_meshlabserver_output=True):
 
         temp_script = False
         temp_ml_log = False
@@ -244,16 +244,17 @@ class FilterScript(object):
 
         run(script=script_file, log=log, ml_log=ml_log,
             mlp_in=self.mlp_in, mlp_out=mlp_out, overwrite=overwrite,
-            file_in=self.file_in, file_out=file_out, output_mask=output_mask, ml_version=self.ml_version)
+            file_in=self.file_in, file_out=file_out, output_mask=output_mask, ml_version=self.ml_version,
+            print_meshlabserver_output=print_meshlabserver_output)
 
         # Parse output
         # TODO: record which layer this is associated with?
         if self.parse_geometry:
-            self.geometry = compute.parse_geometry(ml_log, log)
+            self.geometry = compute.parse_geometry(ml_log, log, print_output=print_meshlabserver_output)
         if self.parse_topology:
-            self.topology = compute.parse_topology(ml_log, log)
+            self.topology = compute.parse_topology(ml_log, log, print_output=print_meshlabserver_output)
         if self.parse_hausdorff:
-            self.hausdorff_distance = compute.parse_hausdorff(ml_log, log)
+            self.hausdorff_distance = compute.parse_hausdorff(ml_log, log, print_output=print_meshlabserver_output)
 
         # Delete temp files
         if self.__no_file_in:
@@ -316,7 +317,8 @@ def handle_error(program_name, cmd, log=None):
 
 def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
         mlp_in=None, mlp_out=None, overwrite=False, file_in=None,
-        file_out=None, output_mask=None, cmd=None, ml_version='1.3.4'):
+        file_out=None, output_mask=None, cmd=None, ml_version='1.3.4',
+        print_meshlabserver_output=True):
     """Run meshlabserver in a subprocess.
 
     Args:
@@ -363,17 +365,14 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
         cmd (str): a full meshlabserver command line, such as
             "meshlabserver -input file.stl". If not None, this
             will override all other arguements except for log.
+        print_meshlabserver_output (bool): Pass meshlabserver's output to stdout; useful for debugging.
+                                           Only used if log is None.
 
     Notes:
         Meshlabserver can't handle spaces in paths or filenames (on Windows at least; haven't tested on other platforms). Enclosing the name in quotes or escaping the space has no effect.
 
     Returns:
         return code of meshlabserver process; 0 if successful
-    """
-    print_meshlabserver_output = True
-    """
-    Pass meshlabserver's output to stdout; useful for debugging.
-    Only used if log is None.
     """
 
     if cmd is None:
@@ -436,7 +435,7 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
             print('meshlabserver cmd = %s' % cmd)
             print('***START OF MESHLAB STDOUT & STDERR***')
         else:
-            log_file = subprocess.DEVNULL
+            log_file = open(os.devnull, 'w')
     while True:
         # TODO: test if shell=True is really needed
         return_code = subprocess.call(cmd, shell=True,
