@@ -95,9 +95,9 @@ class FilterScript(object):
         self.mlp_in = mlp_in
         self.__no_file_in = False
         self.file_out = file_out
-        self.geometry = compute.default_geometry()
-        self.topology = compute.default_topology()
-        self.hausdorff_distance = compute.default_hausdorff_distance()
+        self.geometry = None
+        self.topology = None
+        self.hausdorff_distance = None
         self.parse_geometry = False
         self.parse_topology = False
         self.parse_hausdorff = False
