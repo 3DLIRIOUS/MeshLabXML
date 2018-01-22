@@ -3,6 +3,7 @@
 from . import FilterScript
 from . import util
 
+
 def hausdorff_distance(script, sampled_layer=1, target_layer=0,
                        save_sample=False, sample_vert=True, sample_edge=True,
                        sample_faux_edge=False, sample_face=True,
@@ -106,6 +107,8 @@ def hausdorff_distance(script, sampled_layer=1, target_layer=0,
         '/>\n',
         '  </filter>\n'])
     util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.parse_hausdorff = True
     if isinstance(script, FilterScript) and save_sample:
         script.add_layer('Hausdorff Closest Points')
         script.add_layer('Hausdorff Sample Point')
