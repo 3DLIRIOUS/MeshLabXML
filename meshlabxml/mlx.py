@@ -197,7 +197,7 @@ class FilterScript(object):
         """ Delete mesh layer """
         del self.layer_stack[layer_num]
         # Adjust current layer if needed
-        if layer_num <= self.current_layer():
+        if layer_num < self.current_layer():
             self.set_current_layer(self.current_layer() - 1)
         return None
 
@@ -539,7 +539,7 @@ def find_texture_files(fbasename, log=None):
                 if 'ImageTexture' in line:
                     texture_files.append(os.path.basename(line.split('"')[1]))
                     break
-    elif fext != 'stl':  # add other formats that don't support teture, e.g. xyz?
+    elif fext != 'stl':  # add other formats that don't support texture, e.g. xyz?
         print('File extension %s is not currently supported' % fext)
         # TODO: raise exception here
     texture_files_unique = list(set(texture_files))

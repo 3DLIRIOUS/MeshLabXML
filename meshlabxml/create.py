@@ -519,31 +519,63 @@ def plane_hires_edges(script, size=1.0, x_segments=1, y_segments=1,
 
     grid(script, size=[x_segments + y_segments - 1, 1],
          x_segments=(x_segments + y_segments - 1), y_segments=1)
-    # Deform left side
-    transform.vert_function(
-        script,
-        x_func='if((y>0) and (x<%s),0,x)' % (y_segments),
-        y_func='if((y>0) and (x<%s),(x+1)*%s,y)' % (
-            y_segments, size[1] / y_segments))
-    # Deform top
-    transform.vert_function(
-        script,
-        x_func='if((y>0) and (x>=%s),(x-%s+1)*%s,x)' % (
-            y_segments, y_segments, size[0] / x_segments),
-        y_func='if((y>0) and (x>=%s),%s,y)' % (y_segments, size[1]))
-    # Deform right side
-    transform.vert_function(
-        script,
-        x_func='if((y<.00001) and (x>%s),%s,x)' % (
-            x_segments, size[0]),
-        y_func='if((y<.00001) and (x>%s),(x-%s)*%s,y)' % (
-            x_segments, x_segments, size[1] / y_segments))
-    # Deform bottom
-    transform.vert_function(
-        script,
-        x_func='if((y<.00001) and (x<=%s) and (x>0),(x)*%s,x)' % (
-            x_segments, size[0] / x_segments),
-        y_func='if((y<.00001) and (x<=%s) and (x>0),0,y)' % (x_segments))
+    if ml_script1.ml_version == '1.3.4BETA':
+        and_val = 'and'
+    else:
+        and_val = '&&'
+
+    if script.ml_version == '1.3.4BETA': # muparser version: 1.3.2
+        # Deform left side
+        transform.vert_function(
+            script,
+            x_func='if((y>0) and (x<%s),0,x)' % (y_segments),
+            y_func='if((y>0) and (x<%s),(x+1)*%s,y)' % (
+                y_segments, size[1] / y_segments))
+        # Deform top
+        transform.vert_function(
+            script,
+            x_func='if((y>0) and (x>=%s),(x-%s+1)*%s,x)' % (
+                y_segments, y_segments, size[0] / x_segments),
+            y_func='if((y>0) and (x>=%s),%s,y)' % (y_segments, size[1]))
+        # Deform right side
+        transform.vert_function(
+            script,
+            x_func='if((y<.00001) and (x>%s),%s,x)' % (
+                x_segments, size[0]),
+            y_func='if((y<.00001) and (x>%s),(x-%s)*%s,y)' % (
+                x_segments, x_segments, size[1] / y_segments))
+        # Deform bottom
+        transform.vert_function(
+            script,
+            x_func='if((y<.00001) and (x<=%s) and (x>0),(x)*%s,x)' % (
+                x_segments, size[0] / x_segments),
+            y_func='if((y<.00001) and (x<=%s) and (x>0),0,y)' % (x_segments))
+    else: # muparser version: 2.2.5
+        # Deform left side
+        transform.vert_function(
+            script,
+            x_func='((y>0) && (x<{yseg}) ? 0 : x)'.format(yseg=y_segments),
+            y_func='((y>0) && (x<%s) ? (x+1)*%s : y)' % (
+                y_segments, size[1] / y_segments))
+        # Deform top
+        transform.vert_function(
+            script,
+            x_func='((y>0) && (x>=%s) ? (x-%s+1)*%s : x)' % (
+                y_segments, y_segments, size[0] / x_segments),
+            y_func='((y>0) && (x>=%s) ? %s : y)' % (y_segments, size[1]))
+        # Deform right side
+        transform.vert_function(
+            script,
+            x_func='((y<.00001) && (x>%s) ? %s : x)' % (
+                x_segments, size[0]),
+            y_func='((y<.00001) && (x>%s) ? (x-%s)*%s : y)' % (
+                x_segments, x_segments, size[1] / y_segments))
+        # Deform bottom
+        transform.vert_function(
+            script,
+            x_func='((y<.00001) && (x<=%s) && (x>0) ? (x)*%s : x)' % (
+                x_segments, size[0] / x_segments),
+            y_func='((y<.00001) && (x<=%s) && (x>0) ? 0 : y)' % (x_segments))
     if center:
         transform.translate(script, [-size[0] / 2, -size[1] / 2])
     if color is not None:

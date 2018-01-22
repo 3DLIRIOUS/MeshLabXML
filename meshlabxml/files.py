@@ -4,10 +4,12 @@ import os
 import sys
 import math
 
-from . import run, begin, end
+import meshlabxml as mlx
+from . import run
 from . import util
 from . import compute
 from . import transform
+from . import layers
 
 
 def measure_aabb(fbasename=None, log=None, coord_system='CARTESIAN'):
@@ -107,7 +109,7 @@ def measure_aabb(fbasename=None, log=None, coord_system='CARTESIAN'):
 
 
 def measure_section(fbasename=None, log=None, axis='z', offset=0.0,
-                    rotate_x_angle=None):
+                    rotate_x_angle=None, ml_version='1.3.4BETA'):
     """Measure a cross section of a mesh
     
     Perform a plane cut in one of the major axes (X, Y, Z). If you want to cut on
@@ -130,22 +132,22 @@ def measure_section(fbasename=None, log=None, axis='z', offset=0.0,
             size (list): list of the x, y & z sizes (max - min)
             diagonal (float): the diagonal of the aabb
     """
-    script = 'TEMP3D_measure_section.mlx'
-    file_in = fbasename
-    file_out = 'TEMP3D_aabb.xyz'
+    ml_script1_file = 'TEMP3D_measure_section.mlx'
+    file_out = 'TEMP3D_sect_aabb.xyz'
 
-    begin(script, file_in)
+    ml_script1 = mlx.FilterScript(file_in=fbasename, file_out=file_out, ml_version=ml_version)
     if rotate_x_angle is not None:
-        transform.rotate(script, axis='x', angle=rotate_x_angle)
-    compute.section(script, axis=axis, offset=offset)
-    end(script)
-    run(log=log, file_in=file_in, file_out=file_out, script=script)
+        transform.rotate(ml_script1, axis='x', angle=rotate_x_angle)
+    compute.section(ml_script1, axis=axis, offset=offset)
+    layers.delete_lower(ml_script1)
+    ml_script1.save_to_file(ml_script1_file)
+    ml_script1.run_script(log=log,script_file=ml_script1_file)
     aabb = measure_aabb(file_out, log)
     return aabb
 
 
 def polylinesort(fbasename=None, log=None):
-    """Sort separate line segments in obj format into a continous polyline or polylines.
+    """Sort separate line segments in obj format into a continuous polyline or polylines.
     NOT FINISHED; DO NOT USE
 
     Also measures the length of each polyline
@@ -187,19 +189,18 @@ def polylinesort(fbasename=None, log=None):
 
 def measure_geometry(fbasename=None, log=None, ml_version='1.3.4BETA'):
     """Measures mesh geometry. Also runs measure_aabb"""
-    script = 'TEMP3D_measure_geometry.mlx'
+    ml_script1_file = 'TEMP3D_measure_geometry.mlx'
     ml_log = 'TEMP3D_measure_geometry_log.txt'
-    file_in = fbasename
     file_out = 'TEMP3D_aabb.xyz'
 
     # Initialize ml_log
     ml_log_file = open(ml_log, 'w')
     ml_log_file.close()
 
-    begin(script, file_in)
-    compute.measure_geometry(script)
-    end(script)
-    run(log=log, ml_log=ml_log, file_in=file_in, file_out=file_out, script=script)
+    ml_script1 = mlx.FilterScript(file_in=fbasename, file_out=file_out, ml_version=ml_version)
+    compute.measure_geometry(ml_script1)
+    ml_script1.save_to_file(ml_script1_file)
+    ml_script1.run_script(log=log, ml_log=ml_log, script_file=ml_script1_file)
 
     if log is not None:
         log_file = open(log, 'a')
@@ -219,7 +220,7 @@ def measure_geometry(fbasename=None, log=None, ml_version='1.3.4BETA'):
     return aabb, geometry
 
 
-def measure_topology(fbasename=None, log=None):
+def measure_topology(fbasename=None, log=None, ml_version='1.3.4BETA'):
     """Measures mesh topology
 
     Args:
@@ -243,18 +244,17 @@ def measure_topology(fbasename=None, log=None):
                 or 'undefined' if the mesh is non-manifold.
 
     """
-    script = 'TEMP3D_measure_topology.mlx'
+    ml_script1_file = 'TEMP3D_measure_topology.mlx'
     ml_log = 'TEMP3D_measure_topology_log.txt'
-    file_in = fbasename
 
     # Initialize ml_log
     ml_log_file = open(ml_log, 'w')
     ml_log_file.close()
 
-    begin(script, file_in)
-    compute.measure_topology(script)
-    end(script)
-    run(log=log, ml_log=ml_log, file_in=file_in, script=script)
+    ml_script1 = mlx.FilterScript(file_in=fbasename, ml_version=ml_version)
+    compute.measure_topology(ml_script1)
+    ml_script1.save_to_file(ml_script1_file)
+    ml_script1.run_script(log=log, ml_log=ml_log, script_file=ml_script1_file)
 
     if log is not None:
         log_file = open(log, 'a')
@@ -262,26 +262,25 @@ def measure_topology(fbasename=None, log=None):
             '***Parsed Topology Values for file "%s":\n' %
             fbasename)
         log_file.close()
-    topology = compute.parse_topology(ml_log, log)
+    topology = compute.parse_topology(ml_log, log, ml_version)
     return topology
 
 
 def measure_all(fbasename=None, log=None, ml_version='1.3.4BETA'):
     """Measures mesh geometry, aabb and topology."""
-    script = 'TEMP3D_measure_gAndT.mlx'
+    ml_script1_file = 'TEMP3D_measure_gAndT.mlx'
     ml_log = 'TEMP3D_measure_gAndT_log.txt'
-    file_in = fbasename
     file_out = 'TEMP3D_aabb.xyz'
 
     # Initialize ml_log
     ml_log_file = open(ml_log, 'w')
     ml_log_file.close()
 
-    begin(script, file_in)
-    compute.measure_geometry(script)
-    compute.measure_topology(script)
-    end(script)
-    run(log=log, ml_log=ml_log, file_in=file_in, file_out=file_out, script=script)
+    ml_script1 = mlx.FilterScript(file_in=fbasename, file_out=file_out, ml_version=ml_version)
+    compute.measure_geometry(ml_script1)
+    compute.measure_topology(ml_script1)
+    ml_script1.save_to_file(ml_script1_file)
+    ml_script1.run_script(log=log, ml_log=ml_log, script_file=ml_script1_file)
 
     if log is not None:
         log_file = open(log, 'a')
@@ -305,22 +304,24 @@ def measure_all(fbasename=None, log=None, ml_version='1.3.4BETA'):
             '***Parsed Topology Values for file "%s":\n' %
             fbasename)
         log_file.close()
-    topology = compute.parse_topology(ml_log, log)
+    topology = compute.parse_topology(ml_log, log, ml_version=ml_version)
     return aabb, geometry, topology
 
 
 def measure_dimension(fbasename=None, log=None, axis1=None, offset1=0.0,
-                      axis2=None, offset2=0.0):
+                      axis2=None, offset2=0.0, ml_version='1.3.4BETA'):
     """Measure a dimension of a mesh"""
     axis1 = axis1.lower()
     axis2 = axis2.lower()
-    script = 'TEMP3D_measure_dimension.mlx'
+    ml_script1_file = 'TEMP3D_measure_dimension.mlx'
     file_out = 'TEMP3D_measure_dimension.xyz'
-    begin(script, fbasename)
-    compute.section(script, axis1, offset1, surface=True)
-    compute.section(script, axis2, offset2, surface=False)
-    end(script)
-    run(log=log, file_in=fbasename, file_out=file_out, script=script)
+
+    ml_script1 = mlx.FilterScript(file_in=fbasename, file_out=file_out, ml_version=ml_version)
+    compute.section(ml_script1, axis1, offset1, surface=True)
+    compute.section(ml_script1, axis2, offset2, surface=False)
+    layers.delete_lower(ml_script1)
+    ml_script1.save_to_file(ml_script1_file)
+    ml_script1.run_script(log=log, script_file=ml_script1_file)
 
     for val in ('x', 'y', 'z'):
         if val not in (axis1, axis2):

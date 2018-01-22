@@ -8,6 +8,9 @@ def tex2vc(script):
 
     BUG: this does not work correctly if the file has multiple textures; it
     only uses one texture and remaps all of the UVs to that
+    https://github.com/cnr-isti-vclab/meshlab/issues/124
+    should be fixed in post 2016.12 release
+
     """
     filter_xml = '  <filter name="Transfer Color: Texture to Vertex"/>\n'
     util.write_filter(script, filter_xml)
@@ -202,7 +205,7 @@ def vert_attr2tex_2_meshes(script, source_mesh=0, target_mesh=1, attribute=0,
             the filter to.
         source_mesh (int): The mesh that contains the source data that we want to transfer
         target_mesh (int): The mesh whose texture will be filled according to source mesh data
-        attribute (int): Choose what attribute has to be transferred onto the target texture. You can choose between Per vertex attributes (color,normal,quality) or to transfer color information from source mesh texture
+        attribute (int): Choose what attribute has to be transferred onto the target texture. You can choose between Per vertex attributes (color, normal, quality) or to transfer color information from source mesh texture
         max_distance (float): Sample points for which we do not find anything within this distance are rejected and not considered for recovering data
         tex_name (str): The texture file to be created
         tex_width (int): The texture width
@@ -210,9 +213,20 @@ def vert_attr2tex_2_meshes(script, source_mesh=0, target_mesh=1, attribute=0,
         overwrite_tex (bool): If target mesh has a texture will be overwritten (with provided texture dimension)
         assign_tex (bool): Assign the newly created texture to target mesh
         fill_tex (bool): If enabled the unmapped texture space is colored using a pull push filling algorithm, if false is set to black
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
+    if script.ml_version == '1.3.4BETA':
+        filter_name = 'Transfer Vertex Attributes to Texture (between 2 meshes)'
+    else:
+        filter_name = 'Transfer: Vertex Attributes to Texture (1 or 2 meshes)'
     filter_xml = ''.join([
-        '  <filter name="Transfer Vertex Attributes to Texture (between 2 meshes)">\n',
+        '  <filter name="{}">\n'.format(filter_name),
         '    <Param name="sourceMesh" ',
         'value="%d" ' % source_mesh,
         'description="Source Mesh" ',
@@ -284,9 +298,20 @@ def tex2vc_2_meshes(script, source_mesh=0, target_mesh=1, max_distance=0.5):
         source_mesh (int): The mesh with associated texture that we want to sample from
         target_mesh (int): The mesh whose vertex color will be filled according to source mesh texture
         max_distance (float): Sample points for which we do not find anything within this distance are rejected and not considered for recovering color
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
     """
+    if script.ml_version == '1.3.4BETA':
+        filter_name = 'Texture to Vertex Color (between 2 meshes)'
+    else:
+        filter_name = 'Transfer: Texture to Vertex Color (1 or 2 meshes)'
     filter_xml = ''.join([
-        '  <filter name="Texture to Vertex Color (between 2 meshes)">\n',
+        '  <filter name="{}">\n'.format(filter_name),
         '    <Param name="sourceMesh" ',
         'value="%d" ' % source_mesh,
         'description="Source Mesh" ',
