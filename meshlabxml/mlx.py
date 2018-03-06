@@ -24,7 +24,6 @@ import sys
 import inspect
 import subprocess
 import xml.etree.ElementTree as ET
-import math
 import tempfile
 
 from . import util
@@ -34,9 +33,8 @@ from . import clean
 from . import compute
 
 # Global variables
-ML_VERSION = '1.3.4Beta'
+ML_VERSION = '2016.12'
 """str: MeshLab version to target
-Currently only affects output mask flag
 """
 
 THIS_MODULEPATH = os.path.dirname(
@@ -84,7 +82,7 @@ class FilterScript(object):
     add run method?
 
     """
-    def __init__(self, file_in=None, mlp_in=None, file_out=None, ml_version='1.3.4BETA'):
+    def __init__(self, file_in=None, mlp_in=None, file_out=None, ml_version=ML_VERSION):
         self.ml_version = ml_version # MeshLab version
         self.filters = []
         self.layer_stack = [-1] # set current layer to -1
@@ -124,7 +122,6 @@ class FilterScript(object):
                     # If the mesh file extension is stl, change to that layer and
                     # run clean.merge_vert
                     if fext == 'stl':
-                        # TODO: FIX THIS WITH NEW METHOD CALL
                         self.__stl_layers.append(self.current_layer())
         # Process separate input files next
         if self.file_in is not None:
@@ -150,7 +147,7 @@ class FilterScript(object):
         # If some input files were stl, we need to change back to the last layer
         # If the mesh file extension is stl, change to that layer and
         # run clean.merge_vert
-        if len(self.__stl_layers) > 0:
+        if self.__stl_layers:
             for layer in self.__stl_layers:
                 if layer != self.current_layer():
                     layers.change(self, layer)
@@ -201,7 +198,6 @@ class FilterScript(object):
             self.set_current_layer(self.current_layer() - 1)
         return None
 
-
     def save_to_file(self, script_file):
         """ Save filter script to an mlx file """
         # TODO: issue warning if self.filters is empty
@@ -211,6 +207,8 @@ class FilterScript(object):
 
     def run_script(self, log=None, ml_log=None, mlp_out=None, overwrite=False,
                    file_out=None, output_mask=None, script_file=None, print_meshlabserver_output=True):
+        """ Run the script
+        """
 
         temp_script = False
         temp_ml_log = False
@@ -275,7 +273,6 @@ def handle_error(program_name, cmd, log=None):
         break_now (bool): indicate whether calling program should break out of loop
 
     """
-
     print('\nHouston, we have a problem.',
           '\n%s did not finish successfully. Review the log' % program_name,
           'file and the input file(s) to see what went wrong.')
@@ -317,7 +314,7 @@ def handle_error(program_name, cmd, log=None):
 
 def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
         mlp_in=None, mlp_out=None, overwrite=False, file_in=None,
-        file_out=None, output_mask=None, cmd=None, ml_version='1.3.4',
+        file_out=None, output_mask=None, cmd=None, ml_version=ML_VERSION,
         print_meshlabserver_output=True):
     """Run meshlabserver in a subprocess.
 
@@ -374,7 +371,6 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
     Returns:
         return code of meshlabserver process; 0 if successful
     """
-
     if cmd is None:
         cmd = 'meshlabserver'
         if ml_log is not None:
@@ -557,7 +553,7 @@ def find_texture_files(fbasename, log=None):
     return texture_files, texture_files_unique, material_file
 
 
-def default_output_mask(file_out, texture=True, ml_version='1.3.4'):
+def default_output_mask(file_out, texture=True, ml_version=ML_VERSION):
     """
     Set default output mask options based on file extension
     Note: v1.34BETA changed -om switch to -m
@@ -715,8 +711,6 @@ def create_mlp(file_out, mlp_mesh=None, mlp_raster=None):
 
     http://vcg.isti.cnr.it/~cignoni/newvcglib/html/shot.html
     """
-
-
     # Opening lines
     mlp_file = open(file_out, 'w')
     mlp_file.write('\n'.join([
@@ -783,10 +777,8 @@ def create_mlp(file_out, mlp_mesh=None, mlp_raster=None):
         mlp_file.write(' <RasterGroup/>\n')
         mlp_file.close()
 
-
     # Closing lines
     mlp_file = open(file_out, 'a')
     mlp_file.write('</MeshLabProject>\n')
     mlp_file.close()
-
     return

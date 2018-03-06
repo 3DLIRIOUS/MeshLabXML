@@ -50,7 +50,7 @@ def function(script, red=255, green=255, blue=255, alpha=255, color=None):
     # TODO: add options for HSV
     # https://www.cs.rit.edu/~ncs/color/t_convert.html
     if color is not None:
-        red, green, blue, _ = color_name[color]
+        red, green, blue, _ = color_name[color.lower()]
     filter_xml = ''.join([
         '  <filter name="Per Vertex Color Function">\n',
         '    <Param name="x" ',
