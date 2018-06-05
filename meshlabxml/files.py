@@ -11,6 +11,8 @@ from . import compute
 from . import transform
 from . import layers
 
+#ml_version = '1.3.4BETA'
+ml_version = '2016.12'
 
 def measure_aabb(fbasename=None, log=None, coord_system='CARTESIAN'):
     """ Measure the axis aligned bounding box (aabb) of a mesh
@@ -31,6 +33,7 @@ def measure_aabb(fbasename=None, log=None, coord_system='CARTESIAN'):
             size (3 element list): size of the aabb in each coordinate (max-min)
             diagonal (float): the diagonal of the aabb
     """
+    # TODO: add center point, spherical coordinate system
     fext = os.path.splitext(fbasename)[1][1:].strip().lower()
     if fext != 'xyz':
         fin = 'TEMP3D_aabb.xyz'
@@ -109,7 +112,7 @@ def measure_aabb(fbasename=None, log=None, coord_system='CARTESIAN'):
 
 
 def measure_section(fbasename=None, log=None, axis='z', offset=0.0,
-                    rotate_x_angle=None, ml_version='1.3.4BETA'):
+                    rotate_x_angle=None, ml_version=ml_version):
     """Measure a cross section of a mesh
     
     Perform a plane cut in one of the major axes (X, Y, Z). If you want to cut on
@@ -141,7 +144,7 @@ def measure_section(fbasename=None, log=None, axis='z', offset=0.0,
     compute.section(ml_script1, axis=axis, offset=offset)
     layers.delete_lower(ml_script1)
     ml_script1.save_to_file(ml_script1_file)
-    ml_script1.run_script(log=log,script_file=ml_script1_file)
+    ml_script1.run_script(log=log, script_file=ml_script1_file)
     aabb = measure_aabb(file_out, log)
     return aabb
 
@@ -187,40 +190,34 @@ def polylinesort(fbasename=None, log=None):
     return None
 
 
-def measure_geometry(fbasename=None, log=None, ml_version='1.3.4BETA'):
-    """Measures mesh geometry. Also runs measure_aabb"""
+def measure_geometry(fbasename=None, log=None, ml_version=ml_version):
+    """Measures mesh geometry, including aabb"""
     ml_script1_file = 'TEMP3D_measure_geometry.mlx'
-    ml_log = 'TEMP3D_measure_geometry_log.txt'
-    file_out = 'TEMP3D_aabb.xyz'
-
-    # Initialize ml_log
-    ml_log_file = open(ml_log, 'w')
-    ml_log_file.close()
+    if ml_version == '1.3.4BETA':
+        file_out = 'TEMP3D_aabb.xyz'
+    else:
+        file_out = None
 
     ml_script1 = mlx.FilterScript(file_in=fbasename, file_out=file_out, ml_version=ml_version)
     compute.measure_geometry(ml_script1)
     ml_script1.save_to_file(ml_script1_file)
-    ml_script1.run_script(log=log, ml_log=ml_log, script_file=ml_script1_file)
+    ml_script1.run_script(log=log, script_file=ml_script1_file)
+    geometry = ml_script1.geometry
 
-    if log is not None:
-        log_file = open(log, 'a')
-        log_file.write(
-            '***Axis Aligned Bounding Results for file "%s":\n' %
-            fbasename)
-        log_file.close()
-    aabb = measure_aabb(file_out, log)
-
-    if log is not None:
-        log_file = open(log, 'a')
-        log_file.write(
-            '***Parsed Geometry Values for file "%s":\n' %
-            fbasename)
-        log_file.close()
-    geometry = compute.parse_geometry(ml_log, log, ml_version=ml_version)
+    if ml_version == '1.3.4BETA':
+        if log is not None:
+            log_file = open(log, 'a')
+            log_file.write(
+                '***Axis Aligned Bounding Results for file "%s":\n' %
+                fbasename)
+            log_file.close()
+        aabb = measure_aabb(file_out, log)
+    else:
+        aabb = geometry['aabb']
     return aabb, geometry
 
 
-def measure_topology(fbasename=None, log=None, ml_version='1.3.4BETA'):
+def measure_topology(fbasename=None, log=None, ml_version=ml_version):
     """Measures mesh topology
 
     Args:
@@ -245,71 +242,45 @@ def measure_topology(fbasename=None, log=None, ml_version='1.3.4BETA'):
 
     """
     ml_script1_file = 'TEMP3D_measure_topology.mlx'
-    ml_log = 'TEMP3D_measure_topology_log.txt'
-
-    # Initialize ml_log
-    ml_log_file = open(ml_log, 'w')
-    ml_log_file.close()
-
     ml_script1 = mlx.FilterScript(file_in=fbasename, ml_version=ml_version)
     compute.measure_topology(ml_script1)
     ml_script1.save_to_file(ml_script1_file)
-    ml_script1.run_script(log=log, ml_log=ml_log, script_file=ml_script1_file)
-
-    if log is not None:
-        log_file = open(log, 'a')
-        log_file.write(
-            '***Parsed Topology Values for file "%s":\n' %
-            fbasename)
-        log_file.close()
-    topology = compute.parse_topology(ml_log, log, ml_version)
+    ml_script1.run_script(log=log, script_file=ml_script1_file)
+    topology = ml_script1.topology
     return topology
 
 
-def measure_all(fbasename=None, log=None, ml_version='1.3.4BETA'):
+def measure_all(fbasename=None, log=None, ml_version=ml_version):
     """Measures mesh geometry, aabb and topology."""
     ml_script1_file = 'TEMP3D_measure_gAndT.mlx'
-    ml_log = 'TEMP3D_measure_gAndT_log.txt'
-    file_out = 'TEMP3D_aabb.xyz'
-
-    # Initialize ml_log
-    ml_log_file = open(ml_log, 'w')
-    ml_log_file.close()
+    if ml_version == '1.3.4BETA':
+        file_out = 'TEMP3D_aabb.xyz'
+    else:
+        file_out = None
 
     ml_script1 = mlx.FilterScript(file_in=fbasename, file_out=file_out, ml_version=ml_version)
     compute.measure_geometry(ml_script1)
     compute.measure_topology(ml_script1)
     ml_script1.save_to_file(ml_script1_file)
-    ml_script1.run_script(log=log, ml_log=ml_log, script_file=ml_script1_file)
+    ml_script1.run_script(log=log, script_file=ml_script1_file)
+    geometry = ml_script1.geometry
+    topology = ml_script1.topology
 
-    if log is not None:
-        log_file = open(log, 'a')
-        log_file.write(
-            '***Axis Aligned Bounding Results for file "%s":\n' %
-            fbasename)
-        log_file.close()
-    aabb = measure_aabb(file_out, log)
-
-    if log is not None:
-        log_file = open(log, 'a')
-        log_file.write(
-            '***Parsed Geometry Values for file "%s":\n' %
-            fbasename)
-        log_file.close()
-    geometry = compute.parse_geometry(ml_log, log, ml_version=ml_version)
-
-    if log is not None:
-        log_file = open(log, 'a')
-        log_file.write(
-            '***Parsed Topology Values for file "%s":\n' %
-            fbasename)
-        log_file.close()
-    topology = compute.parse_topology(ml_log, log, ml_version=ml_version)
+    if ml_version == '1.3.4BETA':
+        if log is not None:
+            log_file = open(log, 'a')
+            log_file.write(
+                '***Axis Aligned Bounding Results for file "%s":\n' %
+                fbasename)
+            log_file.close()
+        aabb = measure_aabb(file_out, log)
+    else:
+        aabb = geometry['aabb']
     return aabb, geometry, topology
 
 
 def measure_dimension(fbasename=None, log=None, axis1=None, offset1=0.0,
-                      axis2=None, offset2=0.0, ml_version='1.3.4BETA'):
+                      axis2=None, offset2=0.0, ml_version=ml_version):
     """Measure a dimension of a mesh"""
     axis1 = axis1.lower()
     axis2 = axis2.lower()

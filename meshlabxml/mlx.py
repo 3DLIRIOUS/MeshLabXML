@@ -200,7 +200,9 @@ class FilterScript(object):
 
     def save_to_file(self, script_file):
         """ Save filter script to an mlx file """
-        # TODO: issue warning if self.filters is empty
+        # TODO: rasie exception here instead?
+        if not self.filters:
+            print('WARNING: no filters to save to file!')
         script_file_descriptor = open(script_file, 'w')
         script_file_descriptor.write(''.join(self.opening + self.filters + self.closing))
         script_file_descriptor.close()
@@ -223,7 +225,9 @@ class FilterScript(object):
             temp_file_in_file.close()
             self.file_in = [temp_file_in_file.name]
 
-        if script_file is None:
+        if not self.filters:
+            script_file = None
+        elif script_file is None:
             # Create temporary script file
             temp_script = True
             temp_script_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mlx')
@@ -416,7 +420,7 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
                 try:
                     cmd += ' %s' % output_mask[index]
                 except IndexError:  # If output_mask can't be found use defaults
-                    cmd += default_output_mask(val, ml_version=ml_version)
+                    cmd += ' %s' % default_output_mask(val, ml_version=ml_version)
         if script is not None:
             cmd += ' -s "%s"' % script
     if log is not None:
@@ -475,6 +479,8 @@ def find_texture_files(fbasename, log=None):
     fext = os.path.splitext(fbasename)[1][1:].strip().lower()
     material_file = None
     texture_files = []
+    vert_colors = False
+    face_colors = False
     if fext == 'obj':
         # Material Format: mtllib ./model_mesh.obj.mtl
         with open(fbasename, 'r') as fread:
@@ -492,11 +498,19 @@ def find_texture_files(fbasename, log=None):
         # Texture Format: comment TextureFile model_texture.jpg
         # This works for MeshLab & itSeez3D, but may not work for
         # every ply file.
+        face_element = False
         with open(fbasename, 'rb') as fread:
             # read ascii header; works for both ascii & binary files
             while True:
                 line = fread.readline().strip().decode('ascii')
                 # print(line)
+                if 'element face' in line:
+                    face_element = True
+                if 'red' in line:
+                    if face_element:
+                        face_colors = True
+                    else:
+                        vert_colors = True
                 if 'TextureFile' in line:
                     texture_files.append(os.path.basename(line.split()[2]))
                 if 'end_header' in line:
@@ -534,7 +548,6 @@ def find_texture_files(fbasename, log=None):
             for line in fread:
                 if 'ImageTexture' in line:
                     texture_files.append(os.path.basename(line.split('"')[1]))
-                    break
     elif fext != 'stl':  # add other formats that don't support texture, e.g. xyz?
         print('File extension %s is not currently supported' % fext)
         # TODO: raise exception here
@@ -549,11 +562,15 @@ def find_texture_files(fbasename, log=None):
         log_file.write(
             'Number of unique texture files = %s\n\n' %
             len(texture_files_unique))
+        log_file.write('vertex colors = %s\n' % vert_colors)
+        log_file.write('face colors = %s\n' % face_colors)
         log_file.close()
-    return texture_files, texture_files_unique, material_file
+    colors = {'texture':bool(texture_files), 'vert_colors':vert_colors, 'face_colors':face_colors}
+    return texture_files, texture_files_unique, material_file, colors
 
 
-def default_output_mask(file_out, texture=True, ml_version=ML_VERSION):
+def default_output_mask(file_out, texture=True, vert_normals=True, vert_colors=False,
+                        face_colors=False, ml_version=ML_VERSION):
     """
     Set default output mask options based on file extension
     Note: v1.34BETA changed -om switch to -m
@@ -571,42 +588,35 @@ def default_output_mask(file_out, texture=True, ml_version=ML_VERSION):
      wn -> wedge normals
      wt -> wedge texture coords
     """
+    vn = ''
+    wt = ''
+    vc = ''
+    fc = ''
+
     if ml_version < '1.3.4':
-        om_flag = '-om'
+        om = '-om'
     else:
-        om_flag = '-m'
+        om = '-m'
 
     fext = os.path.splitext(file_out)[1][1:].strip().lower()
+    if fext in ['stl', 'dxf', 'xyz']:
+        om = ''
+        texture = False
+        vert_normals = False
+        vert_colors = False
+        face_colors = False
+#    elif fext == 'ply':
+#        vert_colors = True
 
-    if fext == 'obj':
-        if texture:
-            output_mask = ' %s vc vn fc wt' % om_flag
-        else:
-            output_mask = ' %s vn' % om_flag
-    elif fext == 'ply':
-        if texture:
-            output_mask = ' %s vc vn wt' % om_flag
-        else:
-            output_mask = ' %s vc vn' % om_flag  # with vertex colors
-    elif fext == 'stl':
-        output_mask = ''
-    elif fext == 'dxf':
-        output_mask = ''
-    elif fext == 'xyz':
-        output_mask = ''
-    elif fext == 'x3d':
-        if texture:
-            output_mask = ' %s vc vn wt' % om_flag
-        else:
-            output_mask = ' %s vn' % om_flag
-    elif fext == 'dae':  # COLLADA
-        if texture:
-            output_mask = ' %s vc vn wt' % om_flag
-        else:
-            output_mask = ' %s vn' % om_flag
-    else:
-        print('Default output mask for file extension "%s"' % fext,
-              'is not currently supported')
+    if vert_normals:
+        vn = ' vn'
+    if texture:
+        wt = ' wt'
+    if vert_colors:
+        vc = ' vc'
+    if face_colors:
+        fc = ' fc'
+    output_mask = '{}{}{}{}{}'.format(om, vn, wt, vc, fc)
     return output_mask
 
 
