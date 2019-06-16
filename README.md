@@ -9,7 +9,7 @@ MLX is named after the .mlx file extension for MeshLab script files, however the
 
 ## Installation
 
-MLX can be installed via [PyPI](https://pypi.python.org/pypi/MeshLabXML) and pip:
+MLX can be installed via [PyPI](https://pypi.org/project/MeshLabXML/) and pip:
 
     pip install meshlabxml
 
@@ -214,7 +214,7 @@ Documentation for most filters is available by using "help" within a Python shel
 
 ## Possible Workflow
 
-For production MLX can run completely headless, however while developing new scripts some visual feedback may be helpful.
+For production MLX can run completely headless, however while developing new scripts some visual feedback can be helpful.
 
 MLX does not have an integrated GUI like OpenSCAD or Blender, however you can simulate one by arranging several programs into a useful layout, such as shown below. This can be accomplished pretty easily in modern versions of Windows using the Windows key and the arrow keys.
 

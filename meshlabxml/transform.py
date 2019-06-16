@@ -76,9 +76,9 @@ def translate(script, value=(0.0, 0.0, 0.0)):
     if not isinstance(value, list):
         value = list(value)
     vert_function(script,
-             x_func='x+(%s)' % value[0],
-             y_func='y+(%s)' % value[1],
-             z_func='z+(%s)' % value[2])
+                  x_func='x+(%s)' % value[0],
+                  y_func='y+(%s)' % value[1],
+                  z_func='z+(%s)' % value[2])
     return None
 
 
@@ -201,19 +201,19 @@ def rotate(script, axis='z', angle=0.0):
     angle = math.radians(angle)
     if axis.lower() == 'x':
         vert_function(script,
-                 x_func='x',
-                 y_func='y*cos({angle})-z*sin({angle})'.format(angle=angle),
-                 z_func='y*sin({angle})+z*cos({angle})'.format(angle=angle))
+                      x_func='x',
+                      y_func='y*cos({angle})-z*sin({angle})'.format(angle=angle),
+                      z_func='y*sin({angle})+z*cos({angle})'.format(angle=angle))
     elif axis.lower() == 'y':
         vert_function(script,
-                 x_func='z*sin({angle})+x*cos({angle})'.format(angle=angle),
-                 y_func='y',
-                 z_func='z*cos({angle})-x*sin({angle})'.format(angle=angle))
+                      x_func='z*sin({angle})+x*cos({angle})'.format(angle=angle),
+                      y_func='y',
+                      z_func='z*cos({angle})-x*sin({angle})'.format(angle=angle))
     elif axis.lower() == 'z':
         vert_function(script,
-                 x_func='x*cos({angle})-y*sin({angle})'.format(angle=angle),
-                 y_func='x*sin({angle})+y*cos({angle})'.format(angle=angle),
-                 z_func='z')
+                      x_func='x*cos({angle})-y*sin({angle})'.format(angle=angle),
+                      y_func='x*sin({angle})+y*cos({angle})'.format(angle=angle),
+                      z_func='z')
     else:
         print('Axis name is not valid; exiting ...')
         sys.exit(1)
@@ -328,9 +328,88 @@ def scale(script, value=1.0):
         value = [value[0], value[0], value[0]]"""
     value = util.make_list(value, 3)
     vert_function(script,
-             x_func='x*(%s)' % value[0],
-             y_func='y*(%s)' % value[1],
-             z_func='z*(%s)' % value[2])
+                  x_func='x*(%s)' % value[0],
+                  y_func='y*(%s)' % value[1],
+                  z_func='z*(%s)' % value[2])
+    return None
+
+
+def rotate_to_plane(script, plane='xy', axis='z', origin=True,
+                    freeze=True, all_layers=False):
+    """Generate a matrix transformation that rotates the mesh so that the
+    selection fits one of the main planes XY YZ ZX. May also translate such
+    that the selection centroid rest on the origin. It reports on the log the
+    average error of the fitting (in mesh units).
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        plane (str): Choose the plane where the selection will fit: 'xy', 'yz'
+            or 'zx'
+        axis (str): Choose on which axis do the rotation: 'any' guarantees the
+            best fit of the selection to the plane, only use 'x', 'y' or 'z' if
+            you want to preserve that specific axis.
+        origin (bool): Also apply a translation, such that the centroid of
+            selection rests on the Origin
+        freeze (bool): The transformation is explicitly applied,  and the
+            vertex coords are actually changed.
+        all_layers (bool): The transformation is explicitly applied to all the
+        mesh and raster layers in the project.
+    """
+    # Convert plane name into number
+    if plane.lower() == 'xy':
+        plane_num = 0
+    elif plane.lower() == 'yz':
+        plane_num = 1
+    elif plane.lower() == 'zx':
+        plane_num = 2
+    # Convert axis name into number
+    if axis.lower() == 'x':
+        axis_num = 1
+    elif axis.lower() == 'y':
+        axis_num = 2
+    elif axis.lower() == 'z':
+        axis_num = 3
+    elif axis.lower() == 'any':
+        axis_num = 0
+    filter_xml = ''.join([
+        '  <filter name="Transform: Rotate to Fit to a plane">\n',
+        '    <Param name="targetPlane" ',
+        'value="%d" ' % plane_num,
+        'description="Rotate to fit:" ',
+        'enum_val0="XY plane" ',
+        'enum_val1="YZ plane" ',
+        'enum_val2="ZX plane" ',
+        'enum_cardinality="3" ',
+        'type="RichEnum" ',
+        '/>\n',
+        '    <Param name="rotAxis" ',
+        'value="%d" ' % axis_num,
+        'description=""Rotate on:" ',
+        'enum_val0="any axis" ',
+        'enum_val1="X axis" ',
+        'enum_val2="Y axis" ',
+        'enum_val3="Z axis" ',
+        'enum_cardinality="4" ',
+        'type="RichEnum" ',
+        '/>\n',
+        '    <Param name="ToOrigin" ',
+        'value="%s" ' % str(origin).lower(),
+        'description="Move to Origin" ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="Freeze" ',
+        'value="%s" ' % str(freeze).lower(),
+        'description="Freeze Matrix." ',
+        'type="RichBool" ',
+        '/>\n',
+        '    <Param name="allLayers" ',
+        'value="%s" ' % str(all_layers).lower(),
+        'description="Apply to all visible Layers" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
     return None
 
 
@@ -540,12 +619,12 @@ def radial_flare2(script, flare_radius=None, start_radius=None, end_radius=None,
     """
     flare_radius must be >= end_height (height)
     end_radius max = flare_radius + r
-    
+
     end_radius (num): radius of mesh at end of flare
-    
+
     +15 r= 8.8205
     -15 r= 1.1795
-    
+
     z=10, 5 +/-15 - +/-15*0.74535599249992989880305788957709
     """
     # TODO: set radius limit, make it so flare continues to expand linearly after radius limit
@@ -571,25 +650,25 @@ def radial_flare(script, flare_radius=None, start_radius=None, end_radius=None,
     """
     flare_radius must be >= z2 (height)
     r2 max = flare_radius + r
-    
+
     r2 (num): radius of mesh at end of flare
-    
+
     +15 r= 8.8205
     -15 r= 1.1795
-    
+
     z=10, 5 +/-15 - +/-15*0.74535599249992989880305788957709
     """
     # TODO: set radius limit, make it so flare continues to expand linearly after radius limit
     # if(r<=radius_limit, flare, factor*z+constant
     # TODO: add option to specify radius at height instead of radius
     effective_radius = '(flare_radius) + (start_radius) - (r)'
-    
+
     r_func = 'if(z>0, (flare_radius) + (start_radius) - (effective_radius)*cos(z/(flare_radius)), (r))'
     z_func = 'if(z>0, (effective_radius)*sin(z/(flare_radius)), z)'
-    
+
     r_func = r_func.replace('effective_radius', str(effective_radius)).replace('start_radius', str(start_radius)).replace('flare_radius', str(flare_radius))
     z_func = z_func.replace('effective_radius', str(effective_radius)).replace('start_radius', str(start_radius)).replace('flare_radius', str(flare_radius))
-    
+
     function_cyl_co(script=script, r_func=r_func, z_func=z_func)
     return None
 
@@ -598,25 +677,25 @@ def curl_rim(script, curl_radius=None, start_radius=None, end_radius=None,
     """
     flare_radius must be >= z2 (height)
     r2 max = flare_radius + r
-    
+
     r2 (num): radius of mesh at end of flare
-    
+
     +15 r= 8.8205
     -15 r= 1.1795
-    
+
     z=10, 5 +/-15 - +/-15*0.74535599249992989880305788957709
     """
     # TODO: set radius limit, make it so flare continues to expand linearly after radius limit
     # if(r<=radius_limit, flare, factor*z+constant
     # TODO: add option to specify radius at height instead of radius
     effective_radius = '(curl_radius) - z'
-    
+
     r_func = 'if((r)>(start_radius), (start_radius) + (effective_radius)*sin(((r)-(start_radius))/(curl_radius)), (r))'
     z_func = 'if((r)>(start_radius), (curl_radius) - (effective_radius)*cos(((r)-(start_radius))/(curl_radius)), z)'
-    
+
     r_func = r_func.replace('effective_radius', str(effective_radius)).replace('start_radius', str(start_radius)).replace('curl_radius', str(curl_radius))
     z_func = z_func.replace('effective_radius', str(effective_radius)).replace('start_radius', str(start_radius)).replace('curl_radius', str(curl_radius))
-    
+
     function_cyl_co(script=script, r_func=r_func, z_func=z_func)
     return None
 
@@ -645,10 +724,46 @@ def wrap2cylinder(script, radius=1, pitch=0, taper=0, pitch_func=None,
             'pitch_func', str(pitch_func)).replace(
                 'pi', str(math.pi))
 
-    x_func = '(y+(radius)+(taper_func))*sin(x/(radius))'.replace(
+    x_func = '((radius)-y+(taper_func))*sin(x/(radius))'.replace(
         'radius', str(radius)).replace('taper_func', str(taper_func))
-    y_func = '(y+(radius)+(taper_func))*cos(x/(radius))'.replace(
+    y_func = '-((radius)-y+(taper_func))*cos(x/(radius))'.replace(
         'radius', str(radius)).replace('taper_func', str(taper_func))
+    z_func = 'z+(pitch_func)'.replace('pitch_func', str(pitch_func))
+
+    vert_function(script, x_func, y_func, z_func)
+    return None
+
+
+def wrap2oval(script, a=2, b=1, pitch=0, taper=0, pitch_func=None,
+              taper_func=None):
+    """Deform mesh around an approximate ellipse of semi-major axis a and semi-minor axis b
+
+    TODO: complete this
+    y = 0 will be on the surface of radius "radius"
+    pitch != 0 will create a helix, with distance "pitch" traveled in z for each rotation
+    taper = change in r over z. E.g. a value of 0.5 will shrink r by 0.5 for every z length of 1
+
+    """
+    """vert_function(s=s, x='(%s+y-taper)*sin(x/(%s+y))' % (radius, radius),
+                     y='(%s+y)*cos(x/(%s+y))' % (radius, radius),
+                     z='z-%s*x/(2*%s*(%s+y))' % (pitch, pi, radius))"""
+    if pitch_func is None:
+        pitch_func = '-(pitch)*x/(2*pi*(radius))'
+    pitch_func = pitch_func.replace(
+        'pitch', str(pitch)).replace(
+            'pi', str(math.pi)).replace(
+                'radius', str(radius))
+    if taper_func is None:
+        taper_func = '-(taper)*(pitch_func)'
+    taper_func = taper_func.replace(
+        'taper', str(taper)).replace(
+            'pitch_func', str(pitch_func)).replace(
+                'pi', str(math.pi))
+
+    x_func = '((radius)-y+(taper_func))*sin(x/(radius))'.replace(
+        'radius', str(radius)).replace('taper_func', str(taper_func))
+    y_func = '((radius)-y+(taper_func))*cos(x/(radius)+pi)'.replace(
+        'radius', str(radius)).replace('taper_func', str(taper_func)).replace('pi', str(math.pi))
     z_func = 'z+(pitch_func)'.replace('pitch_func', str(pitch_func))
 
     vert_function(script, x_func, y_func, z_func)
@@ -844,10 +959,10 @@ def deform2curve(script, curve=mp_func.torus_knot('t'), step=0.001):
     normal = mp_func.v_normalize(normal)
 
     new_point = mp_func.v_add(mp_func.v_multiply('x', normal), mp_func.v_multiply('y', bee))
-    function = mp_func.v_add(curve, new_point)
+    mp_function = mp_func.v_add(curve, new_point)
 
-    vert_function(script, x_func=function[0], y_func=function[1], z_func=function[2])
-    return function
+    vert_function(script, x_func=mp_function[0], y_func=mp_function[1], z_func=mp_function[2])
+    return mp_function
 
 
 # TODO: add function to round mesh to desired tolerance

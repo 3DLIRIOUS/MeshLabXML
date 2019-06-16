@@ -47,7 +47,7 @@ def muparser_ref():
         asin    1       arcus sine function
         acos    1       arcus cosine function
         atan    1       arcus tangens function
-        atan2   2       *
+        atan2   2       atan2(y, x)
         sinh    1       hyperbolic sine function
         cosh    1       hyperbolic cosine
         tanh    1       hyperbolic tangens function
@@ -113,6 +113,13 @@ def mp_atan2(y, x):
     """
     return 'if((x)>0, atan((y)/(x)), if(((x)<0) and ((y)>=0), atan((y)/(x))+pi, if(((x)<0) and ((y)<0), atan((y)/(x))-pi, if(((x)==0) and ((y)>0), pi/2, if(((x)==0) and ((y)<0), -pi/2, 0)))))'.replace(
         'pi', str(math.pi)).replace('y', y).replace('x', x)
+
+
+def modulo(a,b):
+    """ Modulo operator
+    Example: modulo(angle,2*pi) to limit an angle to within 2pi radians
+    """
+    return '(a < 0) ? b - (a - (b * rint(a/b))) : a - (b * rint(a/b))'.replace('a', a).replace('b', b)
 
 
 def v_cross(u, v):

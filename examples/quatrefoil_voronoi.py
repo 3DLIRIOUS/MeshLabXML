@@ -44,13 +44,13 @@ def quatrefoil():
 
     # Add meshlabserver directory to OS PATH; omit this if it is already in
     # your PATH
-    meshlabserver_path = 'C:\\Program Files\\VCG\\MeshLab'
-    """
-    if ml_version is '1.3.4BETA':
+    #meshlabserver_path = 'C:\\Program Files\\VCG\\MeshLab'
+    #"""
+    if ml_version == '1.3.4BETA':
         meshlabserver_path = 'C:\\Program Files\\VCG\\MeshLab'
-    elif ml_version is '2016.12':
+    elif ml_version == '2016.12':
         meshlabserver_path = 'C:\\Program Files\\VCG\\MeshLab_2016_12'
-    """
+    #"""
     os.environ['PATH'] = meshlabserver_path + os.pathsep + os.environ['PATH']
 
     # Cross section parameters
@@ -59,7 +59,7 @@ def quatrefoil():
     segments = [64, 64, 720*2]
     inner_radius = 2.0
 
-    # Sinusoidal deformation parametera
+    # Sinusoidal deformation parameters
     amplitude = 4.2
     freq = 4
     phase = 270
