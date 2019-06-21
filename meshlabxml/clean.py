@@ -65,7 +65,7 @@ def close_holes(script, hole_max_edge=30, selected=False,
     """
     filter_xml = ''.join([
         '  <filter name="Close Holes">\n',
-        '    <Param name="maxholesize" ',
+        '    <Param name="MaxHoleSize" ',
         'value="{:d}" '.format(hole_max_edge),
         'description="Max size to be closed" ',
         'type="RichInt" ',
