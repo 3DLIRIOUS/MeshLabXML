@@ -434,6 +434,78 @@ def surface_poisson_screened(script, visible_layer=False, depth=8,
     return None
 
 
+def ball_pivoting(script, ball_radius=0, clustering=20, angle_threshold=90,
+                  delete_faces=False):
+    """ Given a point cloud with normals it reconstructs a surface using the Ball
+    Pivoting Algorithm
+
+    Starting with a seed triangle, the BPA algorithm  pivots a ball of the given
+    radius around the already formed edges until it touches another point,
+    forming another triangle. The process continues until all reachable edges
+    have been tried. This surface reconstruction algoritm uses the existing
+    points without creating new ones. Works better with uniformly sampled point
+    clouds.  If needed first perform a poisson disk subsampling of the point
+    cloud.
+
+    Bernardini F., Mittleman J., Rushmeier H., Silva C., Taubin G.
+    "The ball-pivoting algorithm for surface reconstruction."
+    IEEE TVCG 1999
+
+    Args:
+        script: the FilterScript object or script filename to write
+            the filter to.
+        ball_radius (float): Pivoting Ball radius. The radius of the ball
+            pivoting (rolling) over the set of points. Gaps that are larger than
+            the ball radius will not be filled; similarly the small pits that
+            are smaller than the ball radius will be filled. Set to 0 to
+            autoguess.
+        clustering (float): Clustering radius (% of ball radius). To avoid the
+            creation of too small triangles, if a vertex is found too close to
+            a previous one, it is clustered/merged with it.
+        angle_threshold (float): Angle Threshold (degrees). If we encounter a
+            crease angle that is too large we should stop the ball rolling.
+        delete_faces (bool): Delete initial set of faces. If true all the initial
+            faces of the mesh are deleted and the whole surface is rebuilt from
+            scratch, otherwise the current faces are used as a starting point.
+            Useful if you run multiple times the algorithm with an increasing
+            ball radius.
+
+    Layer stack:
+        No impacts
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+    """
+    filter_xml = ''.join([
+        '  <filter name="Surface Reconstruction: Ball Pivoting">\n',
+        '    <Param name="BallRadius" ',
+        'value="{}" '.format(ball_radius),
+        'description="Pivoting Ball radius (0 autoguess)" ',
+        'min="0" ',
+        'max="100" ',
+        'type="RichAbsPerc" ',
+        '/>\n',
+        '    <Param name="Clustering" ',
+        'value="{}" '.format(clustering),
+        'description="Clustering radius (% of ball radius)" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="CreaseThr" ',
+        'value="{}" '.format(angle_threshold),
+        'description="Angle Threshold (degrees)" ',
+        'type="RichFloat" ',
+        '/>\n',
+        '    <Param name="DeleteFaces" ',
+        'value="{}" '.format(str(delete_faces).lower()),
+        'description="Delete intial set of faces" ',
+        'type="RichBool" ',
+        '/>\n',
+        '  </filter>\n'])
+    util.write_filter(script, filter_xml)
+    return None
+
+
 def curvature_flipping(script, angle_threshold=1.0, curve_type=0,
                        selected=False):
     """ Use the points and normals to build a surface using the Poisson
