@@ -32,8 +32,12 @@ def vc2tex(script, tex_name='TEMP3D_texture.png', tex_width=1024,
         assign_tex (bool): Assign the newly created texture
         fill_tex (bool): If enabled the unmapped texture space is colored using a pull push filling algorithm, if false is set to black
     """
+    if script.ml_version == '1.3.4BETA':
+        filter_name = 'Vertex Color to Texture'
+    else:
+        filter_name = 'Transfer: Vertex Color to Texture'
     filter_xml = ''.join([
-        '  <filter name="Vertex Color to Texture">\n',
+        '  <filter name="%s">\n' % filter_name,
         '    <Param name="textName" ',
         'value="%s" ' % tex_name,
         'description="Texture file" ',
@@ -114,9 +118,9 @@ def mesh2fc(script, all_visible_layers=False):
 
 
 def vert_attr_2_meshes(script, source_mesh=0, target_mesh=1,
-                             geometry=False, normal=False, color=True,
-                             quality=False, selection=False,
-                             quality_distance=False, max_distance=0.5):
+                       geometry=False, normal=False, color=True,
+                       quality=False, selection=False,
+                       quality_distance=False, max_distance=0.5):
     """Vertex Attribute Transfer (between 2 meshes)
 
     Transfer the chosen per-vertex attributes from one mesh to another. Useful to transfer attributes to different representations of the same object. For each vertex of the target mesh the closest point (not vertex!) on the source mesh is computed, and the requested interpolated attributes from that source point are copied into the target vertex.
