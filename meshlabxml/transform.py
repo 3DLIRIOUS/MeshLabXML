@@ -772,16 +772,18 @@ def wrap2oval(script, a=2, b=1, pitch=0, taper=0, pitch_func=None,
 
 def wrap2sphere(script, radius=1):
     """
+    Takes mesh flat on XY plane and wraps around a sphere
+
+    Ref: https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
     """
-    #r = 'sqrt(x^2+y^2)'
+    x_func = '((radius)+z)*cos(y/(radius))*cos(x/(radius)+3/2*pi)'.replace(
+             'radius', str(radius)).replace('pi', str(math.pi))
+    y_func = '((radius)+z)*cos(y/(radius))*sin(x/(radius)+3/2*pi)'.replace(
+             'radius', str(radius)).replace('pi', str(math.pi))
+    z_func = '((radius)+z)*sin(y/(radius))'.replace(
+             'radius', str(radius)).replace('pi', str(math.pi))
 
-    r_func = '(z+(radius))*sin((r)/(radius))'.replace('radius', str(radius))
-    z_func = '(z+(radius))*cos((r)/(radius))'.replace('radius', str(radius))
-
-    #z_func='if(r<radius, sqrt(radius-r^2)-radius+z'.replace('radius', str(radius))
-    #z_func='sqrt(radius-x^2-y^2)-radius+z'.replace('radius', str(radius))
-    # z_func='sqrt(%s-x^2-y^2)-%s+z' % (sphere_radius**2, sphere_radius))
-    function_cyl_co(script=script, r_func=r_func, z_func=z_func)
+    vert_function(script, x_func, y_func, z_func)
     return None
 
 
@@ -812,6 +814,125 @@ def emboss_sphere(script, radius=1, radius_limit=None, angle=None):
 
 
 def bend(script, radius=1, pitch=0, taper=0, angle=0, straght_start=True,
+         straght_end=False, radius_limit=None, outside_limit_end=True):
+    """Bends mesh around cylinder of radius radius and axis z to a certain angle
+
+    straight_ends: Only apply twist (pitch) over the area that is bent
+
+    outside_limit_end (bool): should values outside of the bend radius_limit be considered part
+        of the end (True) or the start (False)?
+    """
+    if radius_limit is None:
+        radius_limit = 2 * radius
+    # TODO: add limit so bend only applies over y<2*radius; add option to set
+    # larger limit
+    angle = math.radians(angle)
+    segment = radius * angle
+    """vert_function(s=s, x='if(x<%s and x>-%s, (%s+y)*sin(x/%s), (%s+y)*sin(%s/%s)+(x-%s)*cos(%s/%s))'
+                        % (segment, segment,  radius, radius,  radius, segment, radius, segment, segment, radius),
+                     y='if(x<%s*%s/2 and x>-%s*%s/2, (%s+y)*cos(x/%s), (%s+y)*cos(%s)-(x-%s*%s)*sin(%s))'
+                        % (radius, angle, radius, angle, radius, radius, radius, angle/2, radius, angle/2, angle/2),"""
+    pitch_func = '-(pitch)*x/(2*pi*(radius))'.replace(
+        'pitch', str(pitch)).replace(
+            'pi', str(math.pi)).replace(
+                'radius', str(radius))
+    taper_func = '(taper)*(pitch_func)'.replace(
+        'taper', str(taper)).replace(
+            'pitch_func', str(pitch_func)).replace(
+                'pi', str(math.pi))
+    # y<radius_limit
+
+    if outside_limit_end:
+        x_func = '(x<(segment) && y<(radius_limit)) ? (x>0 ? (y+(radius)+(taper_func))*sin(x/(radius)) : x) : (y+(radius)+(taper_func))*sin(angle)+(x-(segment))*cos(angle)'
+
+        x_func = '(x<(segment) && y<(radius_limit)) ? (x>0 ? (y+(radius)+(taper_func))*sin(x/(radius)) : x) : (y+(radius)+(taper_func))*sin(angle)+(x-(segment))*cos(angle)'
+    else:
+        x_func = 'x<(segment) ? ((x>0 && y<(radius_limit)) ? (y+(radius)+(taper_func))*sin(x/(radius)) : x) : (y<(radius_limit) ? (y+(radius)+(taper_func))*sin(angle)+(x-(segment))*cos(angle) : x)'
+
+    x_func = x_func.replace(
+        # x_func = 'if(x<segment, if(x>0, (y+radius)*sin(x/radius), x),
+        # (y+radius)*sin(angle)-segment)'.replace(
+        'segment', str(segment)).replace(
+            'radius_limit', str(radius_limit)).replace(
+                'radius', str(radius)).replace(
+                    'taper_func', str(taper_func)).replace(
+                        'angle', str(angle))
+
+    if outside_limit_end:
+        y_func = '(x<(segment) && y<(radius_limit)) ? (x>0 ? (y+(radius)+(taper_func))*cos(x/(radius))-(radius) : y) : (y+(radius)+(taper_func))*cos(angle)-(x-(segment))*sin(angle)-(radius)'
+    else:
+        y_func = 'x<(segment) ? ((x>0 && y<(radius_limit)) ? (y+(radius)+(taper_func))*cos(x/(radius))-(radius) : y) : (y<(radius_limit) ? (y+(radius)+(taper_func))*cos(angle)-(x-(segment))*sin(angle)-(radius) : y)'
+
+    y_func = y_func.replace(
+        'segment', str(segment)).replace(
+            'radius_limit', str(radius_limit)).replace(
+                'radius', str(radius)).replace(
+                    'taper_func', str(taper_func)).replace(
+                        'angle', str(angle))
+
+    if straght_start:
+        start = 'z'
+    else:
+        start = 'z+(pitch_func)'
+    if straght_end:
+        end = 'z-(pitch)*(angle)/(2*pi)'
+    else:
+        end = 'z+(pitch_func)'
+
+    if outside_limit_end:
+        z_func = '(x<(segment) && y<(radius_limit)) ? (x>0 ? z+(pitch_func) : (start)) : (end)'
+    else:
+        z_func = 'x<(segment) ? ((x>0 && y<(radius_limit)) ? z+(pitch_func) : (start)) : (y<(radius_limit) ? (end) : z)'
+    z_func = z_func.replace(
+        'start', str(start)).replace(
+            'end', str(end)).replace(
+                'segment', str(segment)).replace(
+                    'radius_limit', str(radius_limit)).replace(
+                        'radius', str(radius)).replace(
+                            'angle', str(angle)).replace(
+                                'pitch_func', str(pitch_func)).replace(
+                                    'pitch', str(pitch)).replace(
+                                        'pi', str(math.pi))
+
+    """
+    if straight_ends:
+        z_func = 'if(x<segment, if(x>0, z+(pitch_func), z), z-pitch*angle/(2*pi))'.replace(
+            'segment', str(segment)).replace(
+            'radius', str(radius)).replace(
+            'angle', str(angle)).replace(
+            'pitch_func', str(pitch_func)).replace(
+            'pitch', str(pitch)).replace(
+            'pi', str(math.pi))
+    else:
+        #z_func = 'if(x<segment, z+(pitch_func), z-(taper)*(pitch)*(x)/(2*pi*(radius)))'.replace(
+        #z_func = 'if(x<segment, z+(pitch_func), z+(pitch_func))'.replace(
+        #bestz_func = 'if(x<segment, z+(pitch_func), z+(pitch_func)+(-(taper)*(pitch)*(x-segment)/(2*pi*(radius))))'.replace(
+        #z_func = 'if(x<segment, z+(pitch_func), z+(pitch_func)+(-(taper)*(pitch)*x/(2*pi*(radius))))'.replace(
+        #z_func = 'if(x<segment, z+(pitch_func), z+(pitch_func)+((taper)*pitch*angle/(2*pi)))'.replace(
+        z_func = 'z+(pitch_func)'.replace(
+            'radius', str(radius)).replace(
+            'segment', str(segment)).replace(
+            'angle', str(angle)).replace(
+            'taper', str(taper)).replace(
+            'pitch_func', str(pitch_func)).replace(
+            'pitch', str(pitch)).replace(
+            'pi', str(math.pi))
+    """
+    """
+    x_func = 'if(x<%s, if(x>-%s, (%s+y)*sin(x/%s), (%s+y)*sin(-%s)+(x+%s)*cos(-%s)), (%s+y)*sin(%s)+(x-%s)*cos(%s))' % (
+        segment, segment, radius, radius, radius, angle, segment, angle, radius, angle, segment, angle)
+    y_func = 'if(x<%s, if(x>-%s, (%s+y)*cos(x/%s), (%s+y)*cos(-%s)-(x+%s)*sin(-%s)), (%s+y)*cos(%s)-(x-%s)*sin(%s))' % (
+        segment, segment, radius, radius, radius, angle, segment, angle, radius, angle, segment, angle)
+    if straight_ends:
+        z_func = 'if(x<%s, if(x>-%s, z-%s*x/(2*%s*%s), z+%s*%s/(2*%s)), z-%s*%s/(2*%s))' % (
+            segment, segment, pitch, math.pi, radius, pitch, angle, math.pi, pitch, angle, math.pi)
+    else:
+        z_func = 'z-%s*x/(2*%s*%s)' % (pitch, math.pi, radius)
+    """
+    vert_function(script, x_func=x_func, y_func=y_func, z_func=z_func)
+    return None
+
+def bend_134(script, radius=1, pitch=0, taper=0, angle=0, straght_start=True,
          straght_end=False, radius_limit=None, outside_limit_end=True):
     """Bends mesh around cylinder of radius radius and axis z to a certain angle
 

@@ -35,7 +35,7 @@ def per_triangle(script, sidedim=0, textdim=1024, border=2, method=1):
 
     """
     filter_xml = ''.join([
-        '  <filter name="Parametrization: Trivial Per-Triangle ">\n',
+        '  <filter name="Parametrization: Trivial Per-Triangle">\n',
         '    <Param name="sidedim"',
         'value="%d"' % sidedim,
         'description="Quads per line"',

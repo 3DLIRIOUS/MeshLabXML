@@ -122,3 +122,32 @@ def write_filter(script, filter_xml):
     else:
         print(filter_xml)
     return None
+
+
+# Matrix Math
+def mat_transpose(matrix):
+    """ Transpose 2D matrix
+
+    Matrix must be a list of lists, i.e. [[1, 2], [3, 4]]
+
+    """
+    # Using nested list comprehension
+    result = [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
+    return result
+
+
+def matmul(matrix_a, matrix_b):
+    """ Multiply two 2D matrices
+
+    Matrix must be a list of lists, i.e. [[1, 2], [3, 4]]
+
+    """
+    cols_a = len(matrix_a[0])
+    rows_b = len(matrix_b)
+    if cols_a != rows_b:
+        print("Error: Matrices cannot be multiplied, columns_a != rows_b")
+        return
+
+    # Using nested list comprehension
+    result = [[sum(x*y for x, y in zip(matrix_a_row, matrix_b_col)) for matrix_b_col in zip(*matrix_b)] for matrix_a_row in matrix_a]
+    return result

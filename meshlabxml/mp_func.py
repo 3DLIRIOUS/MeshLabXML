@@ -205,11 +205,13 @@ def torus_knot(t, p=3, q=4, scale=1.0, radius=2.0):
             '{scale}*(cos({t}) - ({radius})*cos({p}*({t})))'.format(t=t, p=p, scale=scale, radius=radius),
             '{scale}*(-sin({q}*({t})))'.format(t=t, q=q, scale=scale)]
 
+
 def torus_knot_bbox(scale=1.0, radius=2.0):
     """ Bounding box of the sprecified torus knot
 
     """
     return [2*scale*(1 + radius), 2*scale*(1 + radius), 2*scale]
+
 
 def vert_attr(script, name='radius', function='x^2 + y^2'):
     """ Add a new Per-Vertex scalar attribute to current mesh and fill it with
@@ -321,6 +323,7 @@ def face_attr(script, name='radiosity', function='fi'):
     util.write_filter(script, filter_xml)
     return None
 
+
 def vq_function(script, function='vi', normalize=False, color=False):
     """:Quality function using muparser to generate new Quality for every vertex<br>It's possibile to use the following per-vertex variables in the expression:<br>x, y, z, nx, ny, nz (normal), r, g, b (color), q (quality), rad, vi, <br>and all custom <i>vertex attributes</i> already defined by user.
 
@@ -350,6 +353,7 @@ def vq_function(script, function='vi', normalize=False, color=False):
         '  </filter>\n'])
     util.write_filter(script, filter_xml)
     return None
+
 
 def fq_function(script, function='x0+y0+z0', normalize=False, color=False):
     """ :Quality function using muparser to generate new Quality for every face<br>Insert three function each one for quality of the three vertex of a face<br>It's possibile to use per-face variables like attributes associated to the three vertex of every face.<br><b>x0,y0,z0</b> for <b>first vertex</b>; x1,y1,z1 for second vertex; x2,y2,z2 for third vertex.<br>and also <b>nx0,ny0,nz0</b> nx1,ny1,nz1 etc. for <b>normals</b> and <b>r0,g0,b0</b> for <b>color</b>,<b>q0,q1,q2</b> for <b>quality</b>.<br>

@@ -467,13 +467,15 @@ def find_texture_files(fbasename, log=None):
         log (str): filename to log output
 
     Returns:
-        list: list of all of the texture filenames referenced by the input file.
+        texture_files: list of all of the texture filenames referenced by the input file.
             May contain duplicates if the texture files are referenced more
             than once. List is empty if no texture files are found.
-        list: list of all of the unique texture filenames, also empty if no
+        texture_files_unique: list of all of the unique texture filenames, also empty if no
             texture files are found.
-        str: for obj files only, returns the name of the referenced material file.
-            Returns None if no material file is found.
+        material_file (str): for obj files only, returns the name of the referenced material
+            file. Returns None if no material file is found.
+        colors (bool): returns True if the file contains any color information (textures,
+            vertex or face colors)
 
     """
     fext = os.path.splitext(fbasename)[1][1:].strip().lower()
