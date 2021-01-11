@@ -136,7 +136,10 @@ def measure_geometry(script):
     Bugs:
         Bounding box extents not computed correctly for some volumes
     """
-    filter_xml = '  <xmlfilter name="Compute Geometric Measures"/>\n'
+    if script.ml_version == '1.3.4BETA' or script.ml_version == '2016.12':
+        filter_xml = '  <xmlfilter name="Compute Geometric Measures"/>\n'
+    else:
+        filter_xml = '  <filter name="Compute Geometric Measures"/>\n'
     util.write_filter(script, filter_xml)
     if isinstance(script, mlx.FilterScript):
         script.parse_geometry = True
@@ -157,7 +160,10 @@ def measure_topology(script):
         2016.12
         1.3.4BETA
     """
-    filter_xml = '  <xmlfilter name="Compute Topological Measures"/>\n'
+    if script.ml_version == '1.3.4BETA' or script.ml_version == '2016.12':
+        filter_xml = '  <xmlfilter name="Compute Topological Measures"/>\n'
+    else:
+        filter_xml = '  <filter name="Compute Topological Measures"/>\n'
     util.write_filter(script, filter_xml)
     if isinstance(script, mlx.FilterScript):
         script.parse_topology = True
@@ -233,6 +239,8 @@ def parse_geometry(ml_log, log=None, ml_version='2016.12', print_output=False):
                 geometry['axis_momenta'] = (next(fread).split()[1:4])
                 geometry['axis_momenta'] = [util.to_float(val) for val in geometry['axis_momenta']]
                 break  # stop after we find the first match
+    geometry['aabb']['center'] = [geometry['aabb']['max'][0] - geometry['aabb']['size'][0]/2.0, geometry['aabb']['max'][1] - geometry['aabb']['size'][1]/2, geometry['aabb']['max'][2] - geometry['aabb']['size'][2]/2]
+
     for key, value in geometry.items():
         if log is not None:
             log_file = open(log, 'a')

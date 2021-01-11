@@ -106,6 +106,7 @@ def selected(script, face=True, vert=True):
     util.write_filter(script, filter_xml)
     return None
 
+
 def faces_from_nonmanifold_edges(script):
     """ For each non manifold edge it iteratively deletes the smallest area
         face until it becomes two-manifold.
@@ -121,9 +122,12 @@ def faces_from_nonmanifold_edges(script):
         2016.12
         1.3.4BETA
     """
-    filter_xml = '  <filter name="Remove Faces from Non Manifold Edges"/>\n'
+    if script.ml_version == '1.3.4BETA':
+        filter_xml = '  <filter name="Remove Faces from Non Manifold Edges"/>\n'
+    else:
+        filter_xml = '  <filter name="Repair non Manifold Edges by removing faces"/>\n'
     util.write_filter(script, filter_xml)
-    unreferenced_vert(script)
+    #unreferenced_vert(script)
     return None
 
 

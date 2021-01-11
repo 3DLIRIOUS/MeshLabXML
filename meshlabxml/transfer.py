@@ -204,6 +204,11 @@ def vert_attr2tex_2_meshes(script, source_mesh=0, target_mesh=1, attribute=0,
                            fill_tex=True):
     """Transfer Vertex Attributes to Texture (between 2 meshes)
 
+    Target mesh must be saved to disk or filter will fail
+
+    Created texture seems to be created with absolute pathname. To set relative pathname,
+    use mlx.texture.set_texture afterwards
+
     Args:
         script: the FilterScript object or script filename to write
             the filter to.

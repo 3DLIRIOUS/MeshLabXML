@@ -1,5 +1,6 @@
 """ MeshLabXML texture functions """
 
+from . import FilterScript
 from . import util
 
 
@@ -71,6 +72,17 @@ def per_triangle(script, sidedim=0, textdim=1024, border=2, method=1):
 def voronoi(script, region_num=10, overlap=False):
     """Voronoi Atlas parameterization
 
+    Layer stack:
+        Creates new layer 'VoroAtlas'. Current layer is NOT changed
+            to the new layer (see Bugs).
+
+    MeshLab versions:
+        2016.12
+        1.3.4BETA
+
+    Bugs:
+        Current layer is NOT changed to the new layer, which is inconsistent
+        with the majority of filters that create new layers.
     """
     filter_xml = ''.join([
         '  <filter name="Parametrization: Voronoi Atlas">\n',
@@ -88,6 +100,8 @@ def voronoi(script, region_num=10, overlap=False):
         '/>\n',
         '  </filter>\n'])
     util.write_filter(script, filter_xml)
+    if isinstance(script, FilterScript):
+        script.add_layer('VoroAtlas')
     return None
 
 

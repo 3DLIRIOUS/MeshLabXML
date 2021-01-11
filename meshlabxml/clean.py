@@ -107,8 +107,12 @@ def split_vert_on_nonmanifold_face(script, vert_displacement_ratio=0.0):
         2016.12
         1.3.4BETA
     """
+    if script.ml_version == '1.3.4BETA':
+        filter_name = 'Split Vertexes Incident on Non Manifold Faces'
+    else:
+        filter_name = 'Repair non Manifold Vertices by splitting'
     filter_xml = ''.join([
-        '  <filter name="Split Vertexes Incident on Non Manifold Faces">\n',
+        '  <filter name="{}">\n'.format(filter_name),
         '    <Param name="VertDispRatio" ',
         'value="{}" '.format(vert_displacement_ratio),
         'description="Vertex Displacement Ratio" ',

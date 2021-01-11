@@ -177,14 +177,24 @@ def change(script, layer_num=None):
             layer_num = script.last_layer()
         else:
             layer_num = 0
-    filter_xml = ''.join([
-        '  <filter name="Change the current layer">\n',
-        '    <Param name="mesh" ',
-        'value="{:d}" '.format(layer_num),
-        'description="Mesh" ',
-        'type="RichMesh" ',
-        '/>\n',
-        '  </filter>\n'])
+    if script.ml_version == '1.3.4BETA' or script.ml_version == '2016.12':
+        filter_xml = ''.join([
+            '  <filter name="Change the current layer">\n',
+            '    <Param name="mesh" ',
+            'value="{:d}" '.format(layer_num),
+            'description="Mesh" ',
+            'type="RichMesh" ',
+            '/>\n',
+            '  </filter>\n'])
+    else:
+        filter_xml = ''.join([
+            '  <filter name="Change the current layer">\n',
+            '    <Param name="layer" ',
+            'value="{:d}" '.format(layer_num),
+            'description="Layer Name" ',
+            'type="RichMesh" ',
+            '/>\n',
+            '  </filter>\n'])
     util.write_filter(script, filter_xml)
     if isinstance(script, mlx.FilterScript):
         script.set_current_layer(layer_num)

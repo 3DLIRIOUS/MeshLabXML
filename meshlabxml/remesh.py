@@ -12,8 +12,9 @@ from . import smooth
 def simplify(script, texture=True, faces=25000, target_perc=0.0,
              quality_thr=0.3, preserve_boundary=False, boundary_weight=1.0,
              optimal_placement=True, preserve_normal=False,
-             planar_quadric=False, selected=False, extra_tex_coord_weight=1.0,
-             preserve_topology=True, quality_weight=False, autoclean=True):
+             planar_quadric=False, planar_weight=0.001, selected=False,
+             extra_tex_coord_weight=1.0, preserve_topology=True,
+             quality_weight=False, autoclean=True):
     """ Simplify a mesh using a Quadric based Edge Collapse Strategy, better
         than clustering but slower. Optionally tries to preserve UV
         parametrization for textured meshes.
@@ -46,6 +47,9 @@ def simplify(script, texture=True, faces=25000, target_perc=0.0,
         planar_quadric (bool): Add additional simplification constraints that
             improves the quality of the simplification of the planar portion of
             the mesh.
+        planar_weight (float): How much we should try to preserve the triangles
+            in the planar regions. If you lower this value planar areas will be
+            simplified more.
         selected (bool): The simplification is applied only to the selected set
             of faces. Take care of the target number of faces!
         extra_tex_coord_weight (float): Additional weight for each extra
@@ -71,15 +75,15 @@ def simplify(script, texture=True, faces=25000, target_perc=0.0,
         1.3.4BETA
     """
     if texture:
-        if isinstance(script, FilterScript) and (script.ml_version == '2016.12'):
-            filter_xml = '  <filter name="Simplification: Quadric Edge Collapse Decimation (with texture)">\n'
-        else:
+        if script.ml_version == '1.3.4BETA':
             filter_xml = '  <filter name="Quadric Edge Collapse Decimation (with texture)">\n'
-    else:
-        if isinstance(script, FilterScript) and (script.ml_version == '2016.12'):
-            filter_xml = '  <filter name="Simplification: Quadric Edge Collapse Decimation">\n'
         else:
+            filter_xml = '  <filter name="Simplification: Quadric Edge Collapse Decimation (with texture)">\n'
+    else:
+        if script.ml_version == '1.3.4BETA':
             filter_xml = '  <filter name="Quadric Edge Collapse Decimation">\n'
+        else:
+            filter_xml = '  <filter name="Simplification: Quadric Edge Collapse Decimation">\n'
     # Parameters common to both 'with' and 'without texture'
     filter_xml = ''.join([
         filter_xml,
@@ -139,6 +143,11 @@ def simplify(script, texture=True, faces=25000, target_perc=0.0,
     else:  # Parameters unique to 'without texture'
         filter_xml = ''.join([
             filter_xml,
+            '    <Param name="PlanarWeight" ',
+            'value="{}" '.format(planar_weight),
+            'description="Planar Simp. Weight" ',
+            'type="RichFloat" ',
+            '/>\n',
             '    <Param name="PreserveTopology" ',
             'value="{}" '.format(str(preserve_topology).lower()),
             'description="Preserve Topology" ',
@@ -442,7 +451,7 @@ def ball_pivoting(script, ball_radius=0, clustering=20, angle_threshold=90,
     Starting with a seed triangle, the BPA algorithm  pivots a ball of the given
     radius around the already formed edges until it touches another point,
     forming another triangle. The process continues until all reachable edges
-    have been tried. This surface reconstruction algoritm uses the existing
+    have been tried. This surface reconstruction algorithm uses the existing
     points without creating new ones. Works better with uniformly sampled point
     clouds.  If needed first perform a poisson disk subsampling of the point
     cloud.

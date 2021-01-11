@@ -248,8 +248,12 @@ def small_parts(script, ratio=0.2, non_closed_only=False):
         2016.12
         1.3.4BETA
     """
+    if script.ml_version == '1.3.4BETA' or script.ml_version == '2016.12':
+        filter_name = 'Small component selection'
+    else:
+        filter_name = 'Select small disconnected component'
     filter_xml = ''.join([
-        '  <filter name="Small component selection">\n',
+        '  <filter name="{}">\n'.format(filter_name),
         '    <Param name="NbFaceRatio" ',
         'value="{}" '.format(ratio),
         'description="Small component ratio" ',
