@@ -42,6 +42,9 @@ THIS_MODULEPATH = os.path.dirname(
         inspect.getsourcefile(
             lambda: 0)))
 
+class MeshlabserverException(RuntimeError):
+    pass
+
 """
 Notes on meshlabserver filters - tested with 1.34Beta:
     Filter parameters may be specified in any order. Arguments within parameters
@@ -208,7 +211,7 @@ class FilterScript(object):
         script_file_descriptor.close()
 
     def run_script(self, log=None, ml_log=None, mlp_out=None, overwrite=False,
-                   file_out=None, output_mask=None, script_file=None, print_meshlabserver_output=True):
+                   file_out=None, output_mask=None, script_file=None, print_meshlabserver_output=True, raise_on_error=False):
         """ Run the script
         """
 
@@ -247,7 +250,7 @@ class FilterScript(object):
         run(script=script_file, log=log, ml_log=ml_log,
             mlp_in=self.mlp_in, mlp_out=mlp_out, overwrite=overwrite,
             file_in=self.file_in, file_out=file_out, output_mask=output_mask, ml_version=self.ml_version,
-            print_meshlabserver_output=print_meshlabserver_output)
+            print_meshlabserver_output=print_meshlabserver_output, raise_on_error=raise_on_error)
 
         # Parse output
         # TODO: record which layer this is associated with?
@@ -319,7 +322,7 @@ def handle_error(program_name, cmd, log=None):
 def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
         mlp_in=None, mlp_out=None, overwrite=False, file_in=None,
         file_out=None, output_mask=None, cmd=None, ml_version=ML_VERSION,
-        print_meshlabserver_output=True):
+        print_meshlabserver_output=True, raise_on_error=False):
     """Run meshlabserver in a subprocess.
 
     Args:
@@ -368,6 +371,8 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
             will override all other arguements except for log.
         print_meshlabserver_output (bool): Pass meshlabserver's output to stdout; useful for debugging.
                                            Only used if log is None.
+        raise_on_error (bool): raise an error instead of calling
+            handle_error in case of meshlabserver error
 
     Notes:
         Meshlabserver can't handle spaces in paths or filenames (on Windows at least; haven't tested on other platforms). Enclosing the name in quotes or escaping the space has no effect.
@@ -443,7 +448,11 @@ def run(script='TEMP3D_default.mlx', log=None, ml_log=None,
                                       universal_newlines=True)
         if log is not None:
             log_file.close()
-        if (return_code == 0) or handle_error(program_name='MeshLab', cmd=cmd, log=log):
+        if return_code == 0:
+            break
+        if raise_on_error:
+            raise MeshlabserverException('meshlabserver error! Return code = %s' % return_code)
+        if handle_error(program_name='MeshLab', cmd=cmd, log=log):
             break
     if log is not None:
         log_file = open(log, 'a')
