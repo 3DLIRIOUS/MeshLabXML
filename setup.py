@@ -9,7 +9,7 @@ with io.open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(name='MeshLabXML',
-      version='2018.3',
+      version='2021.7',
       description='Create and run MeshLab XML scripts',
       long_description=long_description,
       long_description_content_type='text/markdown',
