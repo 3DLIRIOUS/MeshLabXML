@@ -186,7 +186,7 @@ def change(script, layer_num=None):
         filter_xml = ''.join([
             '  <filter name="Change the current layer">\n',
             '    <Param ',
-            'value="{:d}" '.format(layer_num),
+            'value="{:f}" '.format(layer_num),
             'name="mesh" ',
             'description="Mesh" ',
             'type="RichMesh" ',
@@ -196,7 +196,7 @@ def change(script, layer_num=None):
         filter_xml = ''.join([
             '  <filter name="Change the current layer">\n',
             '    <Param ',
-            'value="{:d}" '.format(layer_num),
+            'value="{:f}" '.format(layer_num),
             'name="layer" ',
             'description="Layer Name" ',
             'type="RichMesh" ',
