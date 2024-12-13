@@ -5,8 +5,10 @@ import meshlabxml as mlx
 import re
 from . import util
 
+ml_version = '2020.09'
+
 def section(script, axis='z', offset=0.0, surface=False, custom_axis=None,
-            planeref=2):
+            planeref=2, split_surface_with_section=False, ml_version=ml_version):
     """ Compute the polyline representing a planar section (a slice) of a mesh.
 
     If the resulting polyline is closed the result can be filled with a
@@ -26,6 +28,9 @@ def section(script, axis='z', offset=0.0, surface=False, custom_axis=None,
             polyline, also a layer with a triangulated version of the section
             polyline will be created. This only works if the section polyline
             is closed.
+        split_surface_with_section (bool): If selected, it will create two layers
+            with the portion of the mesh under and over the section plane. It
+            requires manifoldness of the mesh.
         custom_axis (3 component list or tuple): Specify a custom axis as
             a 3 component vector (x, y, z); this is ignored unless 'axis' is
             set  to 'custom'.
@@ -43,6 +48,7 @@ def section(script, axis='z', offset=0.0, surface=False, custom_axis=None,
         Current layer is changed to the last (newly created) layer
 
     MeshLab versions:
+        2020.09
         2016.12
         1.3.4BETA
     """
@@ -101,15 +107,28 @@ def section(script, axis='z', offset=0.0, surface=False, custom_axis=None,
         'value="{}" '.format(str(surface).lower()),
         'description="Create also section surface" ',
         'type="RichBool" ',
-        '/>\n',
-        '  </filter>\n'])
+        '/>\n',])
+    if ml_version == '2020.09':
+        filter_xml = ''.join([
+            filter_xml,
+            '    <Param name="splitSurfaceWithSection" ',
+            'value="{}" '.format(str(split_surface_with_section).lower()),
+            'description="Create also split surfaces" ',
+            'type="RichBool" ',
+            '/>\n'])
+    filter_xml = ''.join([filter_xml, '  </filter>\n'])
     util.write_filter(script, filter_xml)
     if isinstance(script, mlx.FilterScript):
         current_layer_label = script.layer_stack[script.current_layer()]
         script.add_layer('{}_sect_{}_{}'.format(current_layer_label, axis_name,
                                                 int(offset)))
         if surface:
-            script.add_layer('{}_sect_{}_{}_mesh'.format(current_layer_label,
+            script.add_layer('{}_sect_{}_{}_filled'.format(current_layer_label,
+                                                         axis_name, int(offset)))
+        if split_surface_with_section:
+            script.add_layer('{}_sect_{}_{}_under'.format(current_layer_label,
+                                                         axis_name, int(offset)))
+            script.add_layer('{}_sect_{}_{}_over'.format(current_layer_label,
                                                          axis_name, int(offset)))
     return None
 
@@ -299,7 +318,7 @@ def parse_topology(ml_log, log=None, ml_version='1.3.4BETA', print_output=False)
                 topology['genus'] = line.split()[2]
                 if topology['genus'] != 'undefined':
                     topology['genus'] = int(topology['genus'])
-            if 'holes' in line:
+            if 'Mesh has' in line and 'holes' in line: # previously just searched on 'holes' but this collided with filenames
                 topology['hole_num'] = line.split()[2]
                 if topology['hole_num'] == 'a':
                     topology['hole_num'] = 'undefined'
