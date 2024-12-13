@@ -200,7 +200,7 @@ class FilterScript(object):
 
     def save_to_file(self, script_file):
         """ Save filter script to an mlx file """
-        # TODO: rasie exception here instead?
+        # TODO: raise exception here instead?
         if not self.filters:
             print('WARNING: no filters to save to file!')
         script_file_descriptor = open(script_file, 'w')
@@ -571,7 +571,7 @@ def find_texture_files(fbasename, log=None):
     return texture_files, texture_files_unique, material_file, colors
 
 
-def default_output_mask(file_out, texture=True, vert_normals=True, vert_colors=False,
+def default_output_mask(file_out, texture=True, vert_normals=False, vert_colors=False,
                         face_colors=False, ml_version=ML_VERSION):
     """
     Set default output mask options based on file extension
@@ -590,34 +590,32 @@ def default_output_mask(file_out, texture=True, vert_normals=True, vert_colors=F
      wn -> wedge normals
      wt -> wedge texture coords
     """
+    om = ''
     vn = ''
     wt = ''
     vc = ''
     fc = ''
 
-    if ml_version < '1.3.4':
-        om = '-om'
-    else:
-        om = '-m'
-
     fext = os.path.splitext(file_out)[1][1:].strip().lower()
     if fext in ['stl', 'dxf', 'xyz']:
-        om = ''
-        texture = False
         vert_normals = False
+        texture = False
         vert_colors = False
         face_colors = False
-#    elif fext == 'ply':
-#        vert_colors = True
 
-    if vert_normals:
-        vn = ' vn'
-    if texture:
-        wt = ' wt'
-    if vert_colors:
-        vc = ' vc'
-    if face_colors:
-        fc = ' fc'
+    if any([vert_normals, texture, vert_colors, face_colors]):
+        if ml_version < '1.3.4':
+            om = '-om'
+        else:
+            om = '-m'    
+        if vert_normals:
+            vn = ' vn'
+        if texture:
+            wt = ' wt'
+        if vert_colors:
+            vc = ' vc'
+        if face_colors:
+            fc = ' fc'
     output_mask = '{}{}{}{}{}'.format(om, vn, wt, vc, fc)
     return output_mask
 

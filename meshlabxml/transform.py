@@ -115,19 +115,21 @@ def rotate2(script, axis='z', angle=0.0, custom_axis=None, center_pt='origin',
         if custom_axis is None:
             print('WARNING: a custom axis was selected, however',
                   '"custom_axis" was not provided. Using default (Z).')
-            custom_axis = [0.0, 0.0, 1.0]
+    if custom_axis is None:
+        custom_axis = [0.0, 0.0, 1.0]
     # Convert center point name into number
     if center_pt.lower() == 'origin':
         center_pt_num = 0
     elif center_pt.lower() == 'barycenter':
         center_pt_num = 1
-    else:  # custom cente point
+    else:  # custom center point
         center_pt_num = 2
         if custom_center_pt is None:
             print('WARNING: a custom center point was selected, however',
                   '"custom_center_pt" was not provided. Using default',
                   '(origin).')
-            custom_center_pt = [0.0, 0.0, 0.0]
+    if custom_center_pt is None:
+        custom_center_pt = [0.0, 0.0, 0.0]
     filter_xml = ''.join([
         '  <filter name="Transform: Rotate">\n',
         '    <Param name="rotAxis" ',
@@ -258,7 +260,8 @@ def scale2(script, value=1.0, uniform=True, center_pt='origin',
             print('WARNING: a custom center point was selected, however',
                   '"custom_center_pt" was not provided. Using default',
                   '(origin).')
-            custom_center_pt = [0.0, 0.0, 0.0]
+    if custom_center_pt is None:
+        custom_center_pt = [0.0, 0.0, 0.0]
     filter_xml = ''.join([
         '  <filter name="Transform: Scale">\n',
         '    <Param name="axisX" ',
@@ -734,37 +737,45 @@ def wrap2cylinder(script, radius=1, pitch=0, taper=0, pitch_func=None,
     return None
 
 
-def wrap2oval(script, a=2, b=1, pitch=0, taper=0, pitch_func=None,
-              taper_func=None):
+def wrap2oval(script, a=200, b=100):
     """Deform mesh around an approximate ellipse of semi-major axis a and semi-minor axis b
 
-    TODO: complete this
-    y = 0 will be on the surface of radius "radius"
-    pitch != 0 will create a helix, with distance "pitch" traveled in z for each rotation
-    taper = change in r over z. E.g. a value of 0.5 will shrink r by 0.5 for every z length of 1
+    Uses French's construction - French's Four-Arc Approximation of Ellipse
 
+    y = 0 will be on the surface of the oval
+    a = major radius
+    b = minor radius
+
+    Currently just wraps around 3/4 of the oval
     """
-    """vert_function(s=s, x='(%s+y-taper)*sin(x/(%s+y))' % (radius, radius),
-                     y='(%s+y)*cos(x/(%s+y))' % (radius, radius),
-                     z='z-%s*x/(2*%s*(%s+y))' % (pitch, pi, radius))"""
-    if pitch_func is None:
-        pitch_func = '-(pitch)*x/(2*pi*(radius))'
-    pitch_func = pitch_func.replace(
-        'pitch', str(pitch)).replace(
-            'pi', str(math.pi)).replace(
-                'radius', str(radius))
-    if taper_func is None:
-        taper_func = '-(taper)*(pitch_func)'
-    taper_func = taper_func.replace(
-        'taper', str(taper)).replace(
-            'pitch_func', str(pitch_func)).replace(
-                'pi', str(math.pi))
+    theta = math.atan(a/b)
+    phi = math.atan(b/a)
 
-    x_func = '((radius)-y+(taper_func))*sin(x/(radius))'.replace(
-        'radius', str(radius)).replace('taper_func', str(taper_func))
-    y_func = '((radius)-y+(taper_func))*cos(x/(radius)+pi)'.replace(
-        'radius', str(radius)).replace('taper_func', str(taper_func)).replace('pi', str(math.pi))
-    z_func = 'z+(pitch_func)'.replace('pitch_func', str(pitch_func))
+    radius_1 = (a*math.sin(theta)+b*math.cos(theta)-a)/(math.sin(theta)+math.cos(theta)-1)
+    radius_2 = (a*math.sin(theta)+b*math.cos(theta)-b)/(math.sin(theta)+math.cos(theta)-1)
+
+    #center_1 = [a - radius_1, 0]
+    #center_2 = [0, radius_2 - b]
+    #center_3 = [-(a - radius_1), 0]
+    #center_4 = [0, -(radius_2 - b)]
+
+    center_1_x = a - radius_1 # center_1_y = 0
+    center_2_y = radius_2 - b # center_2_x = 0
+    center_3_x = -center_1_x
+    center_4_y = -center_2_y
+
+    arc_length_1 = theta*radius_1
+    arc_length_2 = phi*radius_2
+
+    circumference = 4*(arc_length_1 + arc_length_2)
+
+    #print(a, b, theta, phi, radius_1, radius_2, center_1_x, center_2_y, arc_length_1, arc_length_2, circumference)
+
+    x_func = 'abs(x)<(arc_length_2) ? ((radius_2) - y)*sin(x/(radius_2)) : abs(x)<((arc_length_2) + 2*(arc_length_1)) ? sign(x)*(((radius_1) - y)*cos((theta) - (abs(x) - (arc_length_2))/(radius_1)) + (center_1_x)) : x'.replace('radius_1', str(radius_1)).replace('radius_2', str(radius_2)).replace('arc_length_1', str(arc_length_1)).replace('arc_length_2', str(arc_length_2)).replace('center_1_x', str(center_1_x)).replace('theta', str(theta))
+    
+    y_func = 'abs(x)<(arc_length_2) ? ((radius_2) - y)*cos(x/(radius_2) + pi) + center_2_y : abs(x)<((arc_length_2) + 2*(arc_length_1)) ? -((radius_1) - y)*sin((theta) - (abs(x) - (arc_length_2))/(radius_1)) : y'.replace('radius_1', str(radius_1)).replace('radius_2', str(radius_2)).replace('arc_length_1', str(arc_length_1)).replace('arc_length_2', str(arc_length_2)).replace('center_2_y', str(center_2_y)).replace('pi', str(math.pi)).replace('theta', str(theta))
+
+    z_func = 'z'
 
     vert_function(script, x_func, y_func, z_func)
     return None
