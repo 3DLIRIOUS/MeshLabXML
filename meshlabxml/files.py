@@ -12,7 +12,8 @@ from . import transform
 from . import layers
 
 #ml_version = '1.3.4BETA'
-ml_version = '2016.12'
+#ml_version = '2016.12'
+ml_version = '2020.09'
 
 def measure_aabb(fbasename=None, log=None, coord_system='CARTESIAN'):
     """ Measure the axis aligned bounding box (aabb) of a mesh
