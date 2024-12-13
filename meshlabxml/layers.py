@@ -283,7 +283,7 @@ def split_parts(script, part_num=None, layer_num=None):
 def delete_lower(script, layer_num=None):
     """ Delete all layers below the specified one.
 
-    Useful for MeshLab ver 2016.12, whcih will only output layer 0.
+    Useful for MeshLab ver 2016.12, which will only output layer 0.
     """
     if layer_num is None:
         layer_num = script.current_layer()
