@@ -571,7 +571,7 @@ def find_texture_files(fbasename, log=None):
     return texture_files, texture_files_unique, material_file, colors
 
 
-def default_output_mask(file_out, texture=True, vert_normals=False, vert_colors=False,
+def default_output_mask(file_out, texture=False, vert_normals=False, vert_colors=False,
                         face_colors=False, ml_version=ML_VERSION):
     """
     Set default output mask options based on file extension
