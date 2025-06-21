@@ -48,6 +48,9 @@ Description: model has had the following changes applied:
 The above changes result in a model which is watertight and manifold, e.g. 
 suitable for 3D printing.
 
+Filename: bunny_flat(-2Z).ply
+Half-scale 3D printable bunny.
+
 Notes on units and scale:
 The units and scale of the original model are unknown. The principals 
 involved (Marc Levoy and Greg Turk) were contacted however they no longer 
