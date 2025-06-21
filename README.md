@@ -1,5 +1,10 @@
 ![mlx_logo](https://user-images.githubusercontent.com/15272764/30234183-88b1588e-94c0-11e7-9cce-6252e3c39237.png)
 
+## Current Status
+
+This project has been made pretty much obsolete with the release of [pymeshlab](https://pymeshlab.readthedocs.io/en/latest/), and is not being actively updated or maintained. Eventually I'd like to convert any interesting bits to run on pymeshlab instead.
+
+## Synopsis
 
 MLX, or **M**esh**L**ab**X**ML, is a Python (2.7 or 3) scripting interface to [MeshLab](http://www.meshlab.net/), the open source system for processing and editing 3D triangular meshes. 
 
@@ -34,6 +39,7 @@ Many of the functions below are a direct implementation of a MeshLab filter. Oth
 Documentation for most filters is available by using "help" within a Python shell, although there are many that still need to be documented. In addition, in many cases the documentation is taken directly from the MeshLab filter, which is not always sufficient to understand the function if you are not already familiar with how it works.
 
 *mlx* - functions to create and run scripts, determine inputs & outputs, etc.
+
  * FilterScript - Main class to create scripts
  * create_mlp
  * find_texture_files
@@ -41,6 +47,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * run
 
 *mlx.create* - functions that create a new mesh
+
  * grid
  * cube
  * cube_hires
@@ -57,6 +64,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * torus
 
 *mlx.transform* - functions that transform, deform or morph mesh geometry
+
  * translate
  * translate2
  * rotate
@@ -73,6 +81,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * deform2curve
 
 *mlx.select* - functions that work with selections
+
  * all
  * none
  * invert
@@ -90,6 +99,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * spherical_vert
 
 *mlx.delete* - functions that delete faces and/or vertices
+
  * nonmanifold_vert
  * nonmanifold_edge
  * small_parts
@@ -101,6 +111,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * zero_area_face
 
 *mlx.clean* - functions to clean and repair a mesh
+
  * merge_vert
  * close_holes
  * split_vert_on_nonmanifold_face
@@ -108,6 +119,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * snap_mismatched_borders
 
 *mlx.layers* - functions that work with mesh layers
+
  * join
  * delete
  * rename
@@ -116,12 +128,14 @@ Documentation for most filters is available by using "help" within a Python shel
  * split_parts
 
 *mlx.normals* - functions that work with normals
+
  * reorient
  * flip
  * fix
  * point_sets
 
 *mlx.remesh* - remeshing functions
+
  * simplify
  * uniform_resampling
  * hull
@@ -131,12 +145,14 @@ Documentation for most filters is available by using "help" within a Python shel
  * voronoi
 
 *mlx.sampling* - sampling functions
+
  * hausdorff_distance
  * poisson_disk
  * mesh_element
  * clustered_vert
 
 *mlx.smooth* - smoothing functions
+
  * laplacian
  * hc_laplacian
  * taubin
@@ -144,6 +160,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * depth
 
 *mlx.subdivide* - subdivision functions
+
  * loop
  * ls3loop
  * midpoint
@@ -151,6 +168,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * catmull_clark
 
 *mlx.texture* - functions that work with textures and UV mapping (parameterization)
+
  * flat_plane
  * per_triangle
  * voronoi
@@ -166,6 +184,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * param_from_rasters
 
 *mlx.transfer* - functions to transfer attributes
+
  * tex2vc
  * vc2tex
  * fc2vc
@@ -176,6 +195,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * tex2vc_2_meshes
 
 *mlx.compute* - functions that measure or perform a computation
+
  * section
  * measure_geometry
  * measure_topology
@@ -183,11 +203,13 @@ Documentation for most filters is available by using "help" within a Python shel
  * parse_topology
 
 *mlx.vert_color* - functions that work with vertex colors
+
  * function
  * voronoi
  * cyclic_rainbow
 
 *mlx.mp_func* - functions to work with muparser filter functions, this is mostly a vector math library
+
  * muparser_ref
  * v_cross
  * v_dot
@@ -204,6 +226,7 @@ Documentation for most filters is available by using "help" within a Python shel
  * fq_function
 
 *mlx.files* - functions that operate directly on files, usually to measure them
+
  * measure_aabb
  * measure_section
  * measure_geometry
@@ -299,10 +322,6 @@ The MLX logo is a rainbow colored quatrefoil torus knot with Voronoi meshing. Th
  * MeshLabServer can be a bit unstable, especially on certain filters such as mlx.remesh.uniform_resampling. If you have many filters to run, it is better to break the project up into smaller scripts and run problematic filters or sequences independently.
  * It is not currently possible to measure a mesh and use the results in the same script; you will need to measure the mesh and input the results into another instance. For example, if you want to simplify a mesh based on a percentage of the number of faces, you would first need to measure the number of faces with mlx.compute.measure_topology, then input the results into mlx.remesh.simplify.
 
-
-## Status
-
-MLX is still under heavy development and the API is not yet considered stable. Still, it is already quite useful, and is used for production purposes within our small company.
 
 ## License
 
